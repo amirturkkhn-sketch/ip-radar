@@ -107,6 +107,7 @@ td button{padding:4px 12px;font-size:12px;border-radius:10px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .ft{text-align:center;color:var(--mu);font-size:13px;padding:22px 14px 90px;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif}.ft b{color:var(--tx)}.ft small{display:block;font-size:10.5px;opacity:.65;margin-top:3px}
 input[type=checkbox]{accent-color:#c6f45b}
+[hidden]{display:none!important}
 </style></head><body>
 <div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="w" id="app">
@@ -120,8 +121,9 @@ input[type=checkbox]{accent-color:#c6f45b}
     <section class="c" style="--d:0">
       <h2><b>1</b><span data-i="s1"></span></h2>
       <div class="seg" id="seg">
-        <button data-src="zeus" data-i="src_cf"></button><button data-src="range" data-i="src_range"></button><button data-src="edt_socks" data-i="src_edt_socks"></button><button data-src="proxifly" data-i="src_proxifly"></button><button data-src="edt_http" data-i="src_http"></button><button data-src="edt_https" data-i="src_https"></button>
+        <button data-src="zeus" data-i="src_cf"></button><button data-src="range" data-i="src_range"></button><button data-src="manual" data-i="src_manual"></button><button data-src="edt_socks" data-i="src_edt_socks"></button><button data-src="proxifly" data-i="src_proxifly"></button><button data-src="edt_http" data-i="src_http"></button><button data-src="edt_https" data-i="src_https"></button>
       </div>
+      <div id="mbox" hidden><label data-i="man_lbl"></label><textarea id="mtxt" dir="ltr" spellcheck="false" placeholder="104.16.85.20&#10;45.67.89.10:1080&#10;socks5://user:pass@5.6.7.8:1080&#10;1.2.3.4:8080#DE"></textarea><label data-i="man_type"></label><select id="mkind"></select><label class="ck" style="margin-top:10px"><input id="madd" type="checkbox"><span data-i="man_add"></span></label><div class="r" style="margin-top:8px"><button id="mimp" class="p" data-i="man_import"></button><button id="mfile" data-i="man_file"></button></div></div>
       <div id="rbox" hidden><label data-i="range_lbl"></label><textarea id="rtxt" dir="ltr" spellcheck="false" placeholder="104.16.0.0/20&#10;172.64.0.1-172.64.0.200&#10;162.159.135.42"></textarea><div class="r" style="margin-top:8px"><button id="rcf" data-i="range_cf"></button><button id="rapply" class="p" data-i="range_apply"></button></div></div>
       <div id="rrow" class="r" style="margin-top:8px"><button id="reload" data-i="reload"></button><span id="lmsg" class="m" style="margin:0"></span></div>
       <div id="crow"><label><span data-i="country"></span></label><select id="country"></select></div>
@@ -196,7 +198,7 @@ const NATIVE=typeof Native!=='undefined'&&typeof Native.req==='function';
 
 /* ------------------------------------------------------------------ i18n */
 const I18N={
-en:{src_range:'IP ranges',range_lbl:'IP ranges (one per line: CIDR, a-b, or a single IP)',range_cf:'Cloudflare ranges',range_apply:'Use ranges',range_info:'{n} addresses in {m} range(s) — a random sample is tested',range_bad:'No valid IPv4 range found',why:'Why they failed:',title:'IP Radar',subtitle:'Tests IPs and proxies from your own connection, ranks them by real speed, and lets you copy the best ones.',
+en:{src_manual:'Manual',man_lbl:'Paste your own list (one per line)',man_type:'List type',man_add:'Add to the current list instead of replacing it',man_import:'Import',man_file:'From file',st_manual:'manual',src_range:'IP ranges',range_lbl:'IP ranges (one per line: CIDR, a-b, or a single IP)',range_cf:'Cloudflare ranges',range_apply:'Use ranges',range_info:'{n} addresses in {m} range(s) — a random sample is tested',range_bad:'No valid IPv4 range found',why:'Why they failed:',title:'IP Radar',subtitle:'Tests IPs and proxies from your own connection, ranks them by real speed, and lets you copy the best ones.',
  s1:'Source & list',s2:'Your configs (optional)',s3:'Scan',results:'Results',
  src_cf:'Cloudflare IPs',src_edt_socks:'SOCKS (EDT)',src_proxifly:'SOCKS5 (Proxifly)',src_http:'HTTP',src_https:'HTTPS',
  reload:'Reload',country:'Country',all_countries:'All countries ({n})',count:'How many to test',all:'All',random:'Pick randomly (otherwise the first N)',
@@ -219,7 +221,7 @@ en:{src_range:'IP ranges',range_lbl:'IP ranges (one per line: CIDR, a-b, or a si
  n_browser:'Browser mode measures an HTTP request, since a web page cannot send real pings. Use the APK for real values.',
  n_socks5:'Ping = time to reach the proxy. Delay = full request through the proxy (the real delay). Country is looked up after the scan.',
  n_http:'Ping = time to reach the proxy. Delay = full request through the proxy (the real delay).',n_connect:'Ping = time to reach the proxy. Delay = CONNECT tunnel + TLS + request (the real delay).'},
-fa:{src_range:'رنج آی‌پی',range_lbl:'رنج آی‌پی (هر خط یکی: CIDR، a-b یا یک آی‌پی)',range_cf:'رنج‌های کلودفلر',range_apply:'استفاده از رنج‌ها',range_info:'{n} آدرس در {m} رنج — نمونه‌ی تصادفی تست می‌شود',range_bad:'رنج معتبر IPv4 پیدا نشد',why:'دلیل شکست:',title:'آی‌پی رادار',subtitle:'آی‌پی‌ها و پروکسی‌ها را با اینترنت خودتان تست می‌کند، بر اساس سرعت واقعی رتبه‌بندی می‌کند و بهترین‌ها را برای کپی آماده می‌کند.',
+fa:{src_manual:'دستی',man_lbl:'لیست خودتان را بچسبانید (هر خط یکی)',man_type:'نوع لیست',man_add:'به لیست فعلی اضافه شود (به‌جای جایگزینی)',man_import:'وارد کردن',man_file:'از فایل',st_manual:'دستی',src_range:'رنج آی‌پی',range_lbl:'رنج آی‌پی (هر خط یکی: CIDR، a-b یا یک آی‌پی)',range_cf:'رنج‌های کلودفلر',range_apply:'استفاده از رنج‌ها',range_info:'{n} آدرس در {m} رنج — نمونه‌ی تصادفی تست می‌شود',range_bad:'رنج معتبر IPv4 پیدا نشد',why:'دلیل شکست:',title:'آی‌پی رادار',subtitle:'آی‌پی‌ها و پروکسی‌ها را با اینترنت خودتان تست می‌کند، بر اساس سرعت واقعی رتبه‌بندی می‌کند و بهترین‌ها را برای کپی آماده می‌کند.',
  s1:'منبع و لیست',s2:'کانفیگ‌های شما (اختیاری)',s3:'اسکن',results:'نتایج',
  src_cf:'آی‌پی تمیز کلادفلر',src_edt_socks:'ساکس (EDT)',src_proxifly:'ساکس۵ (Proxifly)',src_http:'HTTP',src_https:'HTTPS',
  reload:'بارگیری مجدد',country:'کشور',all_countries:'همه کشورها ({n})',count:'تعداد برای تست',all:'همه',random:'انتخاب تصادفی (در غیر این صورت N مورد اول)',
@@ -368,9 +370,29 @@ function applyRanges(){
 function openRange(){
   ++S.loadTok;S.src='range';S.kind='ip';store.set('src','range');
   document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.src==='range'));
-  $('rbox').hidden=false;$('rrow').hidden=true;
+  showBox('r');
   if(!$('rtxt').value.trim())$('rtxt').value=CF_RANGES;
   applyRanges();
+}
+function showBox(w){$('rbox').hidden=w!=='r';$('mbox').hidden=w!=='m';$('rrow').hidden=w!=='';}
+function importManual(text,fromFile){
+  const kind=$('mkind').value||'ip';store.set('mtxt',$('mtxt').value);store.set('mkind',kind);
+  let items=parseList(text,kind);
+  if(!items.length){$('lmsg').textContent=t('empty_list');return}
+  if($('madd').checked&&S.src==='manual'&&S.kind===kind&&S.items.length){
+    const seen=new Set(S.items.map(x=>x.addr+'|'+x.user));
+    items=S.items.concat(items.filter(x=>!seen.has(x.addr+'|'+x.user)));
+  }
+  S.src='manual';S.kind=kind;store.set('src','manual');
+  setItems(items,'st_manual');
+}
+function openManual(){
+  ++S.loadTok;S.src='manual';store.set('src','manual');
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.src==='manual'));
+  showBox('m');
+  S.kind=$('mkind').value||'ip';
+  if($('mtxt').value.trim())importManual($('mtxt').value);
+  else{setItems([],'st_manual');S.src='manual';$('lmsg').textContent=t('empty_list')}
 }
 function resetResults(){
   if(S.scanning)stopScan();
@@ -389,7 +411,7 @@ function setItems(items,statusKey){
   render();
 }
 async function loadSource(key,force){
-  $('rbox').hidden=true;$('rrow').hidden=false;
+  showBox('');
   const tok=++S.loadTok;
   S.src=key;S.kind=SRC[key].kind;
   document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.src===key));
@@ -409,7 +431,7 @@ function loadCustom(text,statusKey){
   ++S.loadTok;
   const kind=$('kind').value;
   const items=parseList(text,kind);
-  S.src='custom';S.kind=kind;$('rbox').hidden=true;$('rrow').hidden=false;
+  S.src='custom';S.kind=kind;showBox('');
   document.querySelectorAll('#seg button').forEach(b=>b.classList.remove('on'));
   if(!items.length){$('lmsg').textContent=t('empty_list');return}
   setItems(items,statusKey);
@@ -651,7 +673,10 @@ function ripple(e){
   b.appendChild(s);setTimeout(()=>s.remove(),600);
 }
 document.addEventListener('pointerdown',ripple);
-document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>b.dataset.src==='range'?openRange():loadSource(b.dataset.src));
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>b.dataset.src==='range'?openRange():b.dataset.src==='manual'?openManual():loadSource(b.dataset.src));
+$('mimp').onclick=()=>importManual($('mtxt').value);
+$('mkind').onchange=()=>{store.set('mkind',$('mkind').value);if(S.src==='manual'&&$('mtxt').value.trim())importManual($('mtxt').value)};
+$('mfile').onclick=()=>{window.__mfile=1;$('fileList').click()};
 $('rapply').onclick=applyRanges;$('rcf').onclick=()=>{$('rtxt').value=CF_RANGES;applyRanges()};
 $('reload').onclick=()=>{if(S.src==='custom'){toast(t('t_nothing'));return}loadSource(S.src)};
 $('chips').onclick=e=>{const n=e.target.dataset&&e.target.dataset.n;if(!n)return;$('cnt').value=n==='all'?(S.src==='range'?Math.min((S.rng&&S.rng.total)||1,RANGE_MAX):(S.items.length||1)):n;syncChips()};
@@ -667,8 +692,8 @@ $('rand').onchange=()=>store.set('rand',$('rand').checked?'1':'0');
 $('cfg').oninput=parseCfgs;
 $('imp').onclick=()=>$('fileCfg').click();
 $('fileCfg').onchange=async e=>{const f=e.target.files[0];if(!f)return;const x=await f.text();$('cfg').value=($('cfg').value.trim()+'\n'+x).trim();parseCfgs();e.target.value=''};
-$('cfile').onclick=()=>$('fileList').click();
-$('fileList').onchange=async e=>{const f=e.target.files[0];if(!f)return;loadCustom(await f.text(),'st_file');e.target.value=''};
+$('cfile').onclick=()=>{window.__mfile=0;$('fileList').click()};
+$('fileList').onchange=async e=>{const f=e.target.files[0];if(!f){window.__mfile=0;return}const txt=await f.text();e.target.value='';if(window.__mfile){window.__mfile=0;$('mtxt').value=txt.length>200000?txt.slice(0,200000):txt;importManual($('mtxt').value,true)}else loadCustom(txt,'st_file')};
 $('cload').onclick=async()=>{
   const u=$('curl').value.trim();if(!u)return;
   $('lmsg').textContent=t('loading');
@@ -695,6 +720,7 @@ function applyLang(anim){
   $('lang').textContent=lang==='fa'?'English':'فارسی';
   const kinds=[['ip','kind_ip'],['socks','kind_socks'],['http','kind_http'],['https','kind_https']],kv=$('kind').value||'ip';
   $('kind').innerHTML='';for(const [v,k] of kinds){const o=document.createElement('option');o.value=v;o.textContent=t(k);$('kind').appendChild(o)}$('kind').value=kv;
+  const mv=$('mkind').value||store.get('mkind','ip');$('mkind').innerHTML='';for(const [v,k] of kinds){const o=document.createElement('option');o.value=v;o.textContent=t(k);$('mkind').appendChild(o)}$('mkind').value=mv;
   buildSelects();buildCountry();buildMethods();buildFmt();buildResultCC();
   $('eng').className='badge '+(NATIVE?'ok':'warn');$('eng').textContent=t(NATIVE?'eng_native':'eng_browser');
   const sb=$('srcbadge');if(S.items.length)sb.textContent=t(S.statusKey);
@@ -720,6 +746,7 @@ function applyLang(anim){
   syncChips();render();
   const saved=store.get('src','zeus');
   try{const rt=store.get('rtxt','');if(rt)$('rtxt').value=rt}catch(e){}
-  if(saved==='range')openRange();else loadSource(SRC[saved]&&saved!=='custom'?saved:'zeus');
+  try{const mt=store.get('mtxt','');if(mt)$('mtxt').value=mt}catch(e){}
+  if(saved==='range')openRange();else if(saved==='manual')openManual();else loadSource(SRC[saved]&&saved!=='custom'?saved:'zeus');
 })();
 </script></body></html>
