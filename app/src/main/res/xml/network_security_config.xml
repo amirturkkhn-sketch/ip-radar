@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HTTPS everywhere. Plain HTTP is allowed only for the country-lookup service (its free batch API has no HTTPS).
+     Proxy/IP tests use raw sockets and are not affected by this policy. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors><certificates src="system" /></trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">ip-api.com</domain>
+    </domain-config>
+</network-security-config>

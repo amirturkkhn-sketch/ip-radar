@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>IP Scanner</title>
+<style>
+:root{--bg:#0a0f0b;--pn:#0c130f;--pn2:#0e1612;--ln:#1c2a20;--tx:#eef4e8;--mu:#7f9086;--ac:#c6f45b;--ac2:#a6d63c;--bad:#ff6b6b;--warn:#f5b84b;--glow:rgba(198,244,91,.22)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+html,body{max-width:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--tx);font:14px/1.5 "Segoe UI",Vazirmatn,Tahoma,system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bg::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--ln) 1px,transparent 1px),linear-gradient(90deg,var(--ln) 1px,transparent 1px);background-size:38px 38px;opacity:.55;mask-image:radial-gradient(ellipse at 50% 0,#000 0,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at 50% 0,#000 0,transparent 70%)}
+.bg i{position:absolute;width:46vmax;height:46vmax;border-radius:50%;opacity:.16;background-image:radial-gradient(closest-side,currentColor,transparent)!important;background-color:transparent!important}
+.bg i:nth-child(1){color:#c6f45b;top:-18vmax;left:-14vmax}
+.bg i:nth-child(2){color:#4f7a1a;bottom:-22vmax;right:-16vmax;animation-delay:-8s}
+.bg i:nth-child(3){color:#c6f45b;width:28vmax;height:28vmax;top:40%;left:55%;opacity:.07;animation-delay:-14s}
+@keyframes drift{to{transform:translate(6vmax,4vmax) scale(1.12)}}
+.w{max-width:1040px;margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 14px 70px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 18px;padding:10px 0 14px;border-bottom:1px solid var(--ln)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}.logo{flex:none;width:42px;height:42px;border-radius:14px;border:1px solid rgba(198,244,91,.45);background:#10190a;display:grid;place-items:center;box-shadow:0 0 18px var(--glow)}.logo svg{width:22px;height:22px}
+.tag{white-space:nowrap;font:10.5px/1.2 Consolas,monospace;letter-spacing:.22em;color:var(--mu);margin-top:4px;direction:ltr;text-align:start}[dir=rtl] .brand>div{text-align:right}
+.pg{margin:4px 2px 18px}.pg p{color:var(--mu);margin:0;max-width:620px;font-size:13px}
+h1{font-size:19px;font-weight:800;margin:0;line-height:1.2;letter-spacing:-.2px}
+.sub{color:var(--mu);margin:0;max-width:560px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}#lang{border-radius:14px;padding:8px 14px;font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ln);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--mu);background:var(--pn);white-space:nowrap}
+.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--mu)}
+.badge.ok{color:var(--ac);border-color:rgba(198,244,91,.35)}.badge.ok::before{background:var(--ac);box-shadow:0 0 8px var(--ac);animation:pulse 2s infinite}
+.badge.warn{color:var(--warn);border-color:rgba(245,184,75,.35)}.badge.warn::before{background:var(--warn)}
+@keyframes pulse{50%{opacity:.35;transform:scale(.8)}}
+.g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.g>*,.c,.w>*{min-width:0}
+.w{box-sizing:border-box;width:100%}
+select{text-overflow:ellipsis}
+@media(max-width:780px){.g{grid-template-columns:minmax(0,1fr)}}
+.c{background:var(--pn);box-shadow:0 14px 34px -18px rgba(0,0,0,.85);border:1px solid var(--ln);border-radius:22px;padding:18px;position:relative;animation:rise .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0)*90ms)}
+.c::before{display:none}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.c h2{font-size:15px;font-weight:700;color:var(--tx);margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.c h2 b{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:10px;background:var(--ac);color:#0b1204;font-size:13px;font-weight:800}
+label{display:block;color:var(--mu);font-size:12px;margin:10px 0 4px}
+input,select,textarea{width:100%;background:#070c09;color:var(--tx);border:1px solid var(--ln);border-radius:14px;padding:11px 12px;font:inherit;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px var(--glow)}
+textarea{height:84px;resize:vertical;font:12px Consolas,monospace}
+[dir=rtl] textarea,[dir=rtl] input[type=url],[dir=rtl] input[type=text]{direction:ltr;text-align:left}
+button{background:#101812;color:var(--tx);border:1px solid var(--ln);border-radius:14px;padding:10px 16px;font:inherit;cursor:pointer;position:relative;overflow:hidden;transition:border-color .15s,transform .1s,background .15s}
+button:hover{border-color:var(--ac)}button:active{transform:scale(.97)}button:disabled{opacity:.45;cursor:default;transform:none}
+button.p{background:var(--ac);color:#0b1204;border-color:var(--ac);font-weight:800;box-shadow:0 6px 22px var(--glow)}button.p:hover{background:#d3fa73}
+button.ghost{background:transparent}
+.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:rip .55s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+.r{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.r>*{width:auto;max-width:100%}
+.seg{display:flex;gap:4px;background:#070c09;border:1px solid var(--ln);border-radius:16px;padding:4px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto;border:0;border-radius:12px;background:transparent;color:var(--mu);padding:8px 12px;font-size:12.5px;white-space:nowrap}
+.seg button.on{background:rgba(198,244,91,.15);color:var(--ac);box-shadow:inset 0 0 0 1px rgba(198,244,91,.4)}
+.chips button{padding:5px 12px;font-size:12px;border-radius:999px}
+.chips button.on{background:var(--ac);color:#0b1204;border-color:var(--ac);font-weight:700}
+.m{color:var(--mu);font-size:12px;margin-top:6px}
+.ck{display:flex;gap:6px;align-items:center;color:var(--tx);font-size:13px}.ck input{width:auto}
+details{margin-top:14px;border-top:1px solid var(--ln);padding-top:10px}
+summary{cursor:pointer;color:var(--mu);font-size:12.5px;user-select:none}
+summary:hover{color:var(--ac)}
+.hint{color:var(--warn);font-size:12.5px;margin-top:8px}
+.scanhd{display:flex;align-items:center;justify-content:space-between}
+.radar{width:22px;height:22px;border-radius:50%;border:1px solid var(--ln);background:conic-gradient(from 0deg,rgba(198,244,91,.7),transparent 35%);opacity:.25}
+.scanning .radar{opacity:1;animation:spin 1.3s linear infinite;box-shadow:0 0 12px var(--glow)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bar{height:8px;background:var(--ln);border-radius:999px;overflow:hidden;margin:16px 0 8px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac2),var(--ac));transition:width .25s;position:relative}
+.scanning .bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);animation:shim 1.1s infinite}
+@keyframes shim{to{transform:translateX(100%)}}
+.st{display:flex;gap:18px;color:var(--mu);font-size:13px;flex-wrap:wrap}.st b{color:var(--tx);display:inline-block}
+.bump{animation:bump .3s}
+@keyframes bump{40%{transform:scale(1.35);color:var(--ac)}}
+.hd{display:flex;justify-content:space-between;align-items:center;margin:24px 0 8px;gap:8px;flex-wrap:wrap}
+.hd h2{margin:0;font-size:20px;font-weight:800}
+.tb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.tb select{width:auto;max-width:190px}
+.tw{overflow-x:auto;border:1px solid var(--ln);border-radius:20px;background:var(--pn)}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th,td{padding:8px 12px;text-align:start;border-bottom:1px solid var(--ln);white-space:nowrap}
+th{color:var(--mu);font-size:12px;font-weight:500;background:rgba(0,0,0,.18)}
+td.n{font-variant-numeric:tabular-nums}
+[dir=rtl] td.n{direction:ltr;text-align:right}
+td.ip{direction:ltr;text-align:left;unicode-bidi:plaintext;font-family:Consolas,monospace;font-size:13px}
+.fl{font-size:16px;margin-inline-end:4px;font-family:"Segoe UI Emoji","Noto Color Emoji",sans-serif}
+tr.top td:first-child{border-inline-start:3px solid var(--ac)}
+tr.top td.rk{color:var(--ac);font-weight:700}
+tr.top{background:linear-gradient(90deg,rgba(198,244,91,.07),transparent)}
+tr:last-child td{border-bottom:0}
+tr.new{animation:rowin .35s ease-out}
+@keyframes rowin{from{opacity:0;transform:translateX(-12px);background:rgba(198,244,91,.28)}}
+[dir=rtl] tr.new{animation-name:rowinr}
+@keyframes rowinr{from{opacity:0;transform:translateX(12px);background:rgba(198,244,91,.28)}}
+tr.flash{animation:flash .7s}
+@keyframes flash{from{background:rgba(198,244,91,.4)}}
+.good{color:var(--ac)}.mid{color:var(--warn)}.bad{color:var(--bad)}.mu{color:var(--mu)}
+.spd{display:block;height:2px;margin-top:3px;border-radius:2px;width:var(--w);background:currentColor;opacity:.55;min-width:6%}
+td button{padding:4px 12px;font-size:12px;border-radius:10px}
+.em{padding:30px;text-align:center;color:var(--mu)}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translate(-50%,120px);background:#1a260c;border:1px solid var(--ac);color:#fff;padding:9px 18px;border-radius:999px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 14px var(--glow);transition:transform .3s cubic-bezier(.18,.89,.32,1.28);z-index:50;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{transform:translate(-50%,0)}
+.fade{animation:fade .35s}
+@keyframes fade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.ft{text-align:center;color:var(--mu);font-size:13px;padding:22px 14px 90px;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif}.ft b{color:var(--tx)}.ft small{display:block;font-size:10.5px;opacity:.65;margin-top:3px}
+input[type=checkbox]{accent-color:#c6f45b}
+</style></head><body>
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="w" id="app">
+  <header class="top">
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#c6f45b" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12 19 6"/><circle cx="12" cy="12" r="1.3" fill="#c6f45b"/></svg></span><div><h1 data-i="title"></h1><div class="tag">SCAN CENTER</div></div></div>
+    <div class="tools"><span id="eng" class="badge"></span><span id="srcbadge" class="badge"></span><button id="lang" class="ghost"></button></div>
+  </header>
+  <div class="pg"><p class="sub" data-i="subtitle"></p></div>
+
+  <div class="g">
+    <section class="c" style="--d:0">
+      <h2><b>1</b><span data-i="s1"></span></h2>
+      <div class="seg" id="seg">
+        <button data-src="zeus" data-i="src_cf"></button><button data-src="range" data-i="src_range"></button><button data-src="edt_socks" data-i="src_edt_socks"></button><button data-src="proxifly" data-i="src_proxifly"></button><button data-src="edt_http" data-i="src_http"></button><button data-src="edt_https" data-i="src_https"></button>
+      </div>
+      <div id="rbox" hidden><label data-i="range_lbl"></label><textarea id="rtxt" dir="ltr" spellcheck="false" placeholder="104.16.0.0/20&#10;172.64.0.1-172.64.0.200&#10;162.159.135.42"></textarea><div class="r" style="margin-top:8px"><button id="rcf" data-i="range_cf"></button><button id="rapply" class="p" data-i="range_apply"></button></div></div>
+      <div id="rrow" class="r" style="margin-top:8px"><button id="reload" data-i="reload"></button><span id="lmsg" class="m" style="margin:0"></span></div>
+      <div id="crow"><label><span data-i="country"></span></label><select id="country"></select></div>
+      <label data-i="count"></label>
+      <input id="cnt" type="number" min="1" value="200" inputmode="numeric">
+      <div class="r chips" style="margin-top:8px" id="chips"><button data-n="10">10</button><button data-n="20">20</button><button data-n="50">50</button><button data-n="100">100</button><button data-n="200">200</button><button data-n="500">500</button><button data-n="1000">1000</button><button data-n="all" data-i="all"></button></div>
+      <label class="ck"><input id="rand" type="checkbox" checked><span data-i="random"></span></label>
+      <details id="cust"><summary data-i="custom"></summary>
+        <label data-i="custom_url"></label>
+        <input id="curl" type="url" dir="ltr" placeholder="https://raw.githubusercontent.com/…">
+        <label data-i="list_type"></label>
+        <select id="kind"></select>
+        <div class="r" style="margin-top:8px"><button id="cload" data-i="load"></button><button id="cfile" data-i="load_file"></button></div>
+      </details>
+    </section>
+
+    <section class="c" style="--d:1">
+      <h2><b>2</b><span data-i="s2"></span></h2>
+      <textarea id="cfg" data-ph="cfg_ph" dir="ltr"></textarea>
+      <div class="r" style="margin-top:8px"><button id="imp" data-i="cfg_import"></button><span id="cmsg" class="m" style="margin:0"></span></div>
+      <label data-i="copy_format"></label>
+      <select id="fmt"></select>
+      <div class="m" id="fmthint"></div>
+    </section>
+  </div>
+
+  <section class="c" id="scan" style="margin-top:14px;--d:2">
+    <div class="scanhd"><h2 style="margin:0"><b>3</b><span data-i="s3"></span></h2><span class="radar"></span></div>
+    <div class="r" style="margin-top:12px">
+      <button id="go" class="p" data-i="start"></button><button id="stop" disabled data-i="stop"></button>
+      <select id="method" style="min-width:0;flex:1 1 210px;max-width:100%"></select>
+      <select id="conc"></select>
+      <select id="to"></select>
+      <select id="samples"></select>
+    </div>
+    <details><summary data-i="advanced"></summary>
+      <label data-i="sni"></label><input id="sni" type="text" dir="ltr" value="www.cloudflare.com">
+      <label class="ck" style="margin-top:12px"><input id="https" type="checkbox" checked><span data-i="https_t"></span></label>
+    </details>
+    <div id="warn" class="hint" hidden></div>
+    <div id="why" class="hint" style="color:var(--mu)" hidden></div>
+    <div class="bar"><i id="pb"></i></div>
+    <div class="st">
+      <span><span data-i="tested"></span> <b id="s1">0</b>/<b id="s2">0</b></span>
+      <span><span data-i="reachable"></span> <b id="s3">0</b></span>
+      <span><span data-i="failed"></span> <b id="s4">0</b></span>
+      <span><span data-i="best"></span> <b id="s5">–</b></span>
+    </div>
+  </section>
+
+  <div class="hd"><h2 data-i="results"></h2></div>
+  <div class="tb">
+    <select id="rcc"></select>
+    <div class="seg" id="fmtseg"><button data-f="lines" data-i="fmt_lines"></button><button data-f="comma" data-i="fmt_comma"></button></div>
+    <select id="topn" style="width:auto"></select>
+    <button id="ctop" disabled></button>
+    <button id="call" disabled data-i="copy_all"></button>
+    <button id="dl" disabled data-i="download"></button>
+  </div>
+  <div class="tw"><table><thead><tr><th>#</th><th data-i="th_addr"></th><th data-i="th_country"></th><th data-i="th_ping"></th><th data-i="th_delay"></th><th data-i="th_loss"></th><th data-i="th_colo"></th><th></th></tr></thead>
+  <tbody id="tbody"></tbody></table></div>
+  <p class="m" id="note"></p>
+</div>
+<footer class="ft">ساخته‌شده با ❤️ توسط <b>الیاسین اطمینان</b><small>تیم میلی‌کانفیگ</small></footer>
+<div id="toast" class="toast"></div>
+<input id="fileList" type="file" hidden><input id="fileCfg" type="file" hidden>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const NATIVE=typeof Native!=='undefined'&&typeof Native.req==='function';
+
+/* ------------------------------------------------------------------ i18n */
+const I18N={
+en:{src_range:'IP ranges',range_lbl:'IP ranges (one per line: CIDR, a-b, or a single IP)',range_cf:'Cloudflare ranges',range_apply:'Use ranges',range_info:'{n} addresses in {m} range(s) — a random sample is tested',range_bad:'No valid IPv4 range found',why:'Why they failed:',title:'IP Radar',subtitle:'Tests IPs and proxies from your own connection, ranks them by real speed, and lets you copy the best ones.',
+ s1:'Source & list',s2:'Your configs (optional)',s3:'Scan',results:'Results',
+ src_cf:'Cloudflare IPs',src_edt_socks:'SOCKS (EDT)',src_proxifly:'SOCKS5 (Proxifly)',src_http:'HTTP',src_https:'HTTPS',
+ reload:'Reload',country:'Country',all_countries:'All countries ({n})',count:'How many to test',all:'All',random:'Pick randomly (otherwise the first N)',
+ custom:'Custom list or file',custom_url:'List URL (plain text)',list_type:'List type',load:'Load URL',load_file:'Load TXT file',
+ kind_ip:'Clean IPs',kind_socks:'SOCKS5 proxies',kind_http:'HTTP proxies',kind_https:'HTTPS proxies (CONNECT)',
+ loaded:'{n} entries loaded',st_online:'online',st_offline:'offline sample',st_file:'from file',st_url:'from URL',load_fail:'Could not load the list (no internet?)',loading:'Loading…',empty_list:'The list is empty',
+ cfg_ph:'Paste vless:// vmess:// trojan:// configs, one per line',cfg_import:'Import configs from file',cfg_none:'No configs imported',cfg_ready:'{n} config(s) ready',
+ copy_format:'Copy format',fmt_ip:'IP only',fmt_plain:'ip:port',fmt_url:'{s}://ip:port',fmt_hint_ip:'With a config selected, copying puts the IP into that config\'s address.',fmt_hint_px:'Proxies are copied as ip:port or as a full link.',
+ start:'Start scan',stop:'Stop',advanced:'Advanced',sni:'Test host (SNI) for Cloudflare real delay',https_t:'Use HTTPS for the SOCKS5 test (more realistic)',
+ m_real:'Real delay (HTTPS request via IP)',m_icmp:'Real ping (ICMP)',m_tcp:'TCP connect only',m_browser:'Browser (HTTP)',m_socks5:'SOCKS5 real delay',m_http:'HTTP proxy real delay',m_connect:'HTTPS proxy real delay (CONNECT)',
+ conc:'{n} at once',timeout:'{n}s timeout',samples:'{n} sample(s)',
+ tested:'Tested',reachable:'Reachable',failed:'Failed',best:'Best',
+ th_addr:'Address',th_country:'Country',th_ping:'Ping',th_delay:'Delay',th_loss:'Loss',th_colo:'Colo',
+ fmt_lines:'Line by line',fmt_comma:'Comma',all_found:'All countries',top_n:'Top {n}',copy_top:'Copy top {n}',copy_all:'Copy all working',download:'Download TXT',copy:'Copy',
+ empty:'Run a scan to see results. The best ones are highlighted.',none:'Nothing answered. Try a longer timeout or another list.',
+ t_copied:'{n} copied ✓',t_nothing:'Nothing to copy yet',t_saved:'File saved ✓',t_notsaved:'File was not saved',t_stopped:'Scan stopped',t_done:'Done: {n} working, {m} failed',
+ eng_native:'Native engine',eng_browser:'Browser mode',need_native:'This list type needs the Android app (native engine). Open the APK to test proxies.',
+ n_real:'Ping = TCP connect time. Delay = average of full HTTPS requests through the IP. Country and Colo come from Cloudflare itself.',
+ n_icmp:'Ping = fastest ICMP reply, Delay = average of the replies.',n_tcp:'Ping and Delay = TCP connect time to the address.',
+ n_browser:'Browser mode measures an HTTP request, since a web page cannot send real pings. Use the APK for real values.',
+ n_socks5:'Ping = time to reach the proxy. Delay = full request through the proxy (the real delay). Country is looked up after the scan.',
+ n_http:'Ping = time to reach the proxy. Delay = full request through the proxy (the real delay).',n_connect:'Ping = time to reach the proxy. Delay = CONNECT tunnel + TLS + request (the real delay).'},
+fa:{src_range:'رنج آی‌پی',range_lbl:'رنج آی‌پی (هر خط یکی: CIDR، a-b یا یک آی‌پی)',range_cf:'رنج‌های کلودفلر',range_apply:'استفاده از رنج‌ها',range_info:'{n} آدرس در {m} رنج — نمونه‌ی تصادفی تست می‌شود',range_bad:'رنج معتبر IPv4 پیدا نشد',why:'دلیل شکست:',title:'آی‌پی رادار',subtitle:'آی‌پی‌ها و پروکسی‌ها را با اینترنت خودتان تست می‌کند، بر اساس سرعت واقعی رتبه‌بندی می‌کند و بهترین‌ها را برای کپی آماده می‌کند.',
+ s1:'منبع و لیست',s2:'کانفیگ‌های شما (اختیاری)',s3:'اسکن',results:'نتایج',
+ src_cf:'آی‌پی تمیز کلادفلر',src_edt_socks:'ساکس (EDT)',src_proxifly:'ساکس۵ (Proxifly)',src_http:'HTTP',src_https:'HTTPS',
+ reload:'بارگیری مجدد',country:'کشور',all_countries:'همه کشورها ({n})',count:'تعداد برای تست',all:'همه',random:'انتخاب تصادفی (در غیر این صورت N مورد اول)',
+ custom:'لیست یا فایل دلخواه',custom_url:'آدرس لیست (متن ساده)',list_type:'نوع لیست',load:'بارگیری آدرس',load_file:'بارگذاری فایل TXT',
+ kind_ip:'آی‌پی تمیز',kind_socks:'پروکسی SOCKS5',kind_http:'پروکسی HTTP',kind_https:'پروکسی HTTPS (CONNECT)',
+ loaded:'{n} مورد بارگیری شد',st_online:'آنلاین',st_offline:'نمونه آفلاین',st_file:'از فایل',st_url:'از آدرس',load_fail:'بارگیری لیست ناموفق بود (اینترنت دارید؟)',loading:'در حال بارگیری…',empty_list:'لیست خالی است',
+ cfg_ph:'کانفیگ‌های vless:// vmess:// trojan:// را هر کدام در یک خط بچسبانید',cfg_import:'وارد کردن کانفیگ از فایل',cfg_none:'کانفیگی وارد نشده',cfg_ready:'{n} کانفیگ آماده است',
+ copy_format:'قالب کپی',fmt_ip:'فقط آی‌پی',fmt_plain:'ip:port',fmt_url:'{s}://ip:port',fmt_hint_ip:'با انتخاب یک کانفیگ، هنگام کپی آی‌پی جایگزین آدرس همان کانفیگ می‌شود.',fmt_hint_px:'پروکسی‌ها به صورت ip:port یا لینک کامل کپی می‌شوند.',
+ start:'شروع اسکن',stop:'توقف',advanced:'پیشرفته',sni:'هاست تست (SNI) برای تأخیر واقعی کلادفلر',https_t:'تست SOCKS5 با HTTPS (واقعی‌تر)',
+ m_real:'تأخیر واقعی (درخواست HTTPS از طریق آی‌پی)',m_icmp:'پینگ واقعی (ICMP)',m_tcp:'فقط اتصال TCP',m_browser:'مرورگر (HTTP)',m_socks5:'تأخیر واقعی SOCKS5',m_http:'تأخیر واقعی پروکسی HTTP',m_connect:'تأخیر واقعی پروکسی HTTPS (CONNECT)',
+ conc:'{n} همزمان',timeout:'{n} ثانیه مهلت',samples:'{n} نمونه',
+ tested:'تست‌شده',reachable:'پاسخگو',failed:'ناموفق',best:'بهترین',
+ th_addr:'آدرس',th_country:'کشور',th_ping:'پینگ',th_delay:'تأخیر',th_loss:'افت',th_colo:'دیتاسنتر',
+ fmt_lines:'زیر هم',fmt_comma:'با کاما',all_found:'همه کشورها',top_n:'{n} تای برتر',copy_top:'کپی {n} تای برتر',copy_all:'کپی همه سالم‌ها',download:'دانلود TXT',copy:'کپی',
+ empty:'برای دیدن نتایج اسکن را شروع کنید. بهترین‌ها هایلایت می‌شوند.',none:'هیچ موردی پاسخ نداد. مهلت را بیشتر کنید یا لیست دیگری امتحان کنید.',
+ t_copied:'{n} مورد کپی شد ✓',t_nothing:'هنوز چیزی برای کپی نیست',t_saved:'فایل ذخیره شد ✓',t_notsaved:'فایل ذخیره نشد',t_stopped:'اسکن متوقف شد',t_done:'پایان: {n} سالم، {m} ناموفق',
+ eng_native:'موتور بومی',eng_browser:'حالت مرورگر',need_native:'این نوع لیست به اپلیکیشن اندروید (موتور بومی) نیاز دارد. با APK تست کنید.',
+ n_real:'پینگ = زمان اتصال TCP. تأخیر = میانگین درخواست‌های کامل HTTPS از طریق آی‌پی. کشور و دیتاسنتر را خود کلادفلر اعلام می‌کند.',
+ n_icmp:'پینگ = سریع‌ترین پاسخ ICMP، تأخیر = میانگین پاسخ‌ها.',n_tcp:'پینگ و تأخیر = زمان اتصال TCP به آدرس.',
+ n_browser:'حالت مرورگر یک درخواست HTTP را اندازه می‌گیرد چون صفحه وب پینگ واقعی نمی‌فرستد. برای مقادیر واقعی از APK استفاده کنید.',
+ n_socks5:'پینگ = زمان رسیدن به پروکسی. تأخیر = درخواست کامل از طریق پروکسی (تأخیر واقعی). کشور بعد از اسکن پیدا می‌شود.',
+ n_http:'پینگ = زمان رسیدن به پروکسی. تأخیر = درخواست کامل از طریق پروکسی (تأخیر واقعی).',n_connect:'پینگ = زمان رسیدن به پروکسی. تأخیر = تونل CONNECT + TLS + درخواست (تأخیر واقعی).'}
+};
+let lang='en';
+const t=(k,v)=>{let s=(I18N[lang]&&I18N[lang][k])||I18N.en[k]||k;if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s};
+const store={get(k,d){try{const v=localStorage.getItem('ips_'+k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem('ips_'+k,v)}catch(e){}}};
+
+/* ----------------------------------------------------------- native bridge */
+let _id=0;const _cb=new Map();
+window.__nat=(id,json)=>{const f=_cb.get(id);if(f){_cb.delete(id);let o;try{o=JSON.parse(json)}catch(e){o={ok:false,err:'bad-json'}}f(o)}};
+const nat=(m,a)=>new Promise(res=>{
+  const id=++_id;let done=false;
+  const fin=o=>{if(!done){done=true;_cb.delete(id);res(o)}};
+  _cb.set(id,fin);
+  setTimeout(()=>fin({ok:false,err:'lost'}),((a.timeout||15000)*(a.samples||1))+9000);
+  try{Native.req(id,m,JSON.stringify(a))}catch(e){fin({ok:false,err:'bridge'})}
+});
+
+/* ------------------------------------------------------------------ data */
+const RAW='https://raw.githubusercontent.com/',CDN='https://cdn.jsdelivr.net/gh/';
+const SRC={
+ zeus:{kind:'ip',urls:[RAW+'panel-zeus/Z-E-U-S/main/ips.txt',CDN+'panel-zeus/Z-E-U-S@main/ips.txt']},
+ edt_socks:{kind:'socks',urls:[RAW+'EDT-Pages/Proxy-List/main/data/socks.txt',CDN+'EDT-Pages/Proxy-List@main/data/socks.txt']},
+ proxifly:{kind:'socks',urls:[CDN+'proxifly/free-proxy-list@main/proxies/protocols/socks5/data.txt',RAW+'proxifly/free-proxy-list/main/proxies/protocols/socks5/data.txt']},
+ edt_http:{kind:'http',urls:[RAW+'EDT-Pages/Proxy-List/main/data/http.txt',CDN+'EDT-Pages/Proxy-List@main/data/http.txt']},
+ edt_https:{kind:'https',urls:[RAW+'EDT-Pages/Proxy-List/main/data/https.txt',CDN+'EDT-Pages/Proxy-List@main/data/https.txt']},
+ custom:{kind:'ip',urls:[]}
+};
+const METHODS={ip:['real','icmp','tcp'],socks:['socks5','tcp'],http:['http','tcp'],https:['connect','tcp']};
+/* Small built-in sample of Cloudflare IPs, used when the online list cannot be downloaded. */
+const SAMPLE_IPS='104.16.85.20 104.16.86.20 104.16.87.20 104.17.150.8 104.17.151.8 162.159.135.42 172.67.180.12 104.21.60.10 104.26.10.15 104.16.132.229 104.16.133.229 104.17.140.11 104.18.20.40 162.159.140.66 172.67.70.88 104.16.100.15 104.16.101.15 104.17.80.30 104.18.15.22 162.159.150.10 172.67.130.50 104.16.200.5 104.17.65.12 104.18.35.45 162.159.160.80 104.16.110.12 104.17.95.40 162.159.170.20 104.16.70.80 104.17.110.25 104.16.45.10 104.17.50.20 104.16.18.90 104.18.110.50 172.67.210.40 104.16.25.10 104.17.30.15 104.20.10.5 104.24.100.1 104.22.5.30'.split(' ').join('\n');
+
+const S={errs:{},src:'zeus',kind:'ip',items:[],groups:{},token:0,scanning:false,res:[],done:0,total:0,failed:0,seen:new Set(),filterCC:'*',geoBusy:false,fmtMode:'lines',loadTok:0,method:'real',statusKey:'st_online',lastMethod:'real'};
+let cfgs=[];
+
+const flag=cc=>/^[A-Z]{2}$/.test(cc||'')?String.fromCodePoint(...[...cc].map(c=>127397+c.charCodeAt(0))):'🌐';
+const cname=cc=>{try{return new Intl.DisplayNames([lang],{type:'region'}).of(cc)||cc}catch(e){return cc}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function parseList(text,kind){
+  const items=[],seen=new Set();let sec=null,id=0;
+  for(const raw of text.split(/\r?\n/)){
+    let line=raw.trim();if(!line)continue;
+    if(line[0]==='#'||line.startsWith('//')||(line[0]==='['&&line.endsWith(']'))){
+      const w=line.replace(/^[#\/\[\]\s]+/,'').split(/[\s\-:\]]+/)[0].toUpperCase();
+      if(/^[A-Z]{2}$/.test(w))sec=w;continue}
+    let cc=sec;
+    const h=line.indexOf('#');
+    if(h>0){const m=line.slice(h+1).trim().match(/^[A-Za-z]{2}(?![A-Za-z])/);if(m)cc=m[0].toUpperCase();line=line.slice(0,h).trim()}
+    else if(line.includes(',')){const p=line.split(',');line=p[0].trim();const m=(p[p.length-1]||'').trim().match(/^[A-Za-z]{2}$/);if(m)cc=m[0].toUpperCase()}
+    else if(/\s/.test(line)){const p=line.split(/\s+/);line=p[0];const m=(p[1]||'').match(/^[A-Za-z]{2}$/);if(m)cc=m[0].toUpperCase()}
+    line=line.replace(/^[a-z][a-z0-9+.-]*:\/\//i,'');
+    let it=null;
+    if(kind==='ip'){
+      const m=line.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?::\d+)?$/);
+      if(!m||m.slice(1,5).some(x=>+x>255))continue;
+      const host=m[1]+'.'+m[2]+'.'+m[3]+'.'+m[4];
+      it={host,port:443,addr:host,user:'',pass:'',cc};
+    }else{
+      let user='',pass='';
+      const at=line.lastIndexOf('@');
+      if(at>0){const cr=line.slice(0,at);line=line.slice(at+1);const i=cr.indexOf(':');user=i<0?cr:cr.slice(0,i);pass=i<0?'':cr.slice(i+1)}
+      const p=line.split(':');if(p.length<2)continue;
+      const host=p[0],port=+p[1];
+      if(!/^[\w.-]+$/.test(host)||!(port>0&&port<65536))continue;
+      if(p.length>=4&&!user){user=p[2];pass=p.slice(3).join(':')}
+      it={host,port,addr:host+':'+port,user,pass,cc};
+    }
+    const key=it.addr+'|'+it.user;
+    if(seen.has(key))continue;seen.add(key);
+    it.id=id++;items.push(it);
+  }
+  return items;
+}
+
+async function getText(url){
+  if(NATIVE){const r=await nat('fetch',{url,timeout:15000});if(!r.ok)throw new Error(r.err);return r.text}
+  const c=new AbortController(),id=setTimeout(()=>c.abort(),15000);
+  try{const r=await fetch(url,{signal:c.signal,cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.text()}finally{clearTimeout(id)}
+}
+
+const CF_RANGES='173.245.48.0/20\n103.21.244.0/22\n103.22.200.0/22\n103.31.4.0/22\n141.101.64.0/18\n108.162.192.0/18\n190.93.240.0/20\n188.114.96.0/20\n197.234.240.0/22\n198.41.128.0/17\n162.158.0.0/15\n104.16.0.0/13\n104.24.0.0/14\n172.64.0.0/13\n131.0.72.0/22';
+const RANGE_MAX=20000;
+function ip2n(s){const m=s.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);if(!m)return null;const a=m.slice(1).map(Number);if(a.some(x=>x>255))return null;return((a[0]*256+a[1])*256+a[2])*256+a[3]}
+const n2ip=n=>[Math.floor(n/16777216)%256,Math.floor(n/65536)%256,Math.floor(n/256)%256,n%256].join('.');
+function parseRanges(text){
+  const ranges=[];let total=0;
+  for(const tok of text.split(/[\s,;]+/)){
+    if(!tok||tok[0]==='#')continue;
+    let lo=null,hi=null,m;
+    if((m=tok.match(/^([\d.]+)\/(\d{1,2})$/))){const b=ip2n(m[1]),p=+m[2];if(b===null||p<8||p>32)continue;const size=Math.pow(2,32-p);lo=Math.floor(b/size)*size;hi=lo+size-1}
+    else if((m=tok.match(/^([\d.]+)-([\d.]+)$/))){lo=ip2n(m[1]);hi=ip2n(m[2]);if(hi===null&&lo!==null&&/^\d{1,3}$/.test(m[2]))hi=Math.floor(lo/256)*256+Math.min(255,+m[2]);if(lo===null||hi===null||hi<lo||hi-lo>16777215)continue}
+    else{lo=ip2n(tok);if(lo===null)continue;hi=lo}
+    ranges.push([lo,hi]);total+=hi-lo+1;
+  }
+  return{ranges,total};
+}
+const mkIp=h=>({host:h,port:443,addr:h,user:'',pass:'',cc:null});
+function genRange(n){
+  const {ranges,total}=S.rng||{ranges:[],total:0};
+  if(!total)return[];
+  const out=[],okAddr=(x,single)=>single||(x%256!==0&&x%256!==255);
+  if(total<=n){
+    for(const [lo,hi] of ranges)for(let x=lo;x<=hi;x++)if(okAddr(x,total<=2))out.push(mkIp(n2ip(x)));
+    if($('rand').checked)for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}
+    return out;
+  }
+  const seen=new Set();let tries=0;
+  while(out.length<n&&tries++<n*30){
+    let r=Math.floor(Math.random()*total),x=null;
+    for(const [lo,hi] of ranges){const sz=hi-lo+1;if(r<sz){x=lo+r;break}r-=sz}
+    if(x===null||seen.has(x)||!okAddr(x,false))continue;
+    seen.add(x);out.push(mkIp(n2ip(x)));
+  }
+  return out;
+}
+function applyRanges(){
+  const text=$('rtxt').value;store.set('rtxt',text);
+  S.rng=parseRanges(text);
+  setItems([],'st_online');
+  S.src='range';S.kind='ip';
+  if(!S.rng.total){$('lmsg').textContent=t('range_bad');return}
+  $('lmsg').textContent=t('range_info',{n:S.rng.total.toLocaleString(),m:S.rng.ranges.length});
+  $('cnt').max=Math.min(S.rng.total,RANGE_MAX);
+}
+function openRange(){
+  ++S.loadTok;S.src='range';S.kind='ip';store.set('src','range');
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.src==='range'));
+  $('rbox').hidden=false;$('rrow').hidden=true;
+  if(!$('rtxt').value.trim())$('rtxt').value=CF_RANGES;
+  applyRanges();
+}
+function resetResults(){
+  if(S.scanning)stopScan();
+  S.res=[];S.done=0;S.total=0;S.failed=0;S.seen=new Set();S.filterCC='*';S.geoBusy=false;buildResultCC();
+}
+function setItems(items,statusKey){
+  resetResults();
+  S.items=items;S.groups={};
+  for(const it of items){if(it.cc)(S.groups[it.cc]=S.groups[it.cc]||[]).push(it)}
+  S.statusKey=statusKey;
+  buildCountry();buildMethods();buildFmt();
+  const n=items.length;
+  $('lmsg').textContent=t('loaded',{n:n.toLocaleString()});
+  $('cnt').max=n||'';
+  const sb=$('srcbadge');sb.className='badge '+(statusKey==='st_offline'?'warn':'ok');sb.textContent=t(statusKey);
+  render();
+}
+async function loadSource(key,force){
+  $('rbox').hidden=true;$('rrow').hidden=false;
+  const tok=++S.loadTok;
+  S.src=key;S.kind=SRC[key].kind;
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.src===key));
+  $('lmsg').textContent=t('loading');
+  store.set('src',key);
+  let text=null;
+  for(const u of SRC[key].urls){
+    try{const x=await getText(u);if(x&&x.length>20){text=x;break}}catch(e){}
+  }
+  if(tok!==S.loadTok)return;
+  let items=text?parseList(text,S.kind):[];
+  if(items.length){setItems(items,'st_online');return}
+  if(S.kind==='ip'){setItems(parseList(SAMPLE_IPS,'ip'),'st_offline');$('lmsg').textContent=t('load_fail')+' · '+t('loaded',{n:S.items.length});return}
+  setItems([],'st_offline');$('lmsg').textContent=t('load_fail');
+}
+function loadCustom(text,statusKey){
+  ++S.loadTok;
+  const kind=$('kind').value;
+  const items=parseList(text,kind);
+  S.src='custom';S.kind=kind;$('rbox').hidden=true;$('rrow').hidden=false;
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.remove('on'));
+  if(!items.length){$('lmsg').textContent=t('empty_list');return}
+  setItems(items,statusKey);
+}
+
+/* ------------------------------------------------------------ UI builders */
+function buildCountry(){
+  const sel=$('country'),prev=sel.value;
+  const ccs=Object.keys(S.groups).sort((a,b)=>S.groups[b].length-S.groups[a].length);
+  $('crow').hidden=ccs.length<1;
+  sel.innerHTML='';
+  const o=document.createElement('option');o.value='*';o.textContent='🌐 '+t('all_countries',{n:S.items.length.toLocaleString()});sel.appendChild(o);
+  for(const cc of ccs){const e=document.createElement('option');e.value=cc;e.textContent=flag(cc)+' '+cname(cc)+' ('+cc+') — '+S.groups[cc].length.toLocaleString();sel.appendChild(e)}
+  sel.value=[...sel.options].some(x=>x.value===prev)?prev:'*';
+}
+function buildMethods(){
+  const sel=$('method'),prev=sel.value;
+  let list=METHODS[S.kind];
+  if(!NATIVE)list=S.kind==='ip'?['browser']:[];
+  sel.innerHTML='';
+  for(const m of list){const o=document.createElement('option');o.value=m;o.textContent=t('m_'+m);sel.appendChild(o)}
+  if(list.includes(prev))sel.value=prev;
+  const bad=!list.length;
+  $('warn').hidden=!bad;$('warn').textContent=bad?t('need_native'):'';
+  $('go').disabled=bad||S.scanning;
+  $('sni').closest('details').querySelector('label').hidden=S.kind!=='ip';
+  $('sni').hidden=S.kind!=='ip';
+  $('https').closest('label').hidden=S.kind!=='socks';
+  updateNote();
+}
+function updateNote(){const m=$('method').value;$('note').textContent=m?t('n_'+m):''}
+function buildFmt(){
+  const sel=$('fmt'),prev=sel.value;sel.innerHTML='';
+  const add=(v,txt)=>{const o=document.createElement('option');o.value=v;o.textContent=txt;sel.appendChild(o)};
+  if(S.kind==='ip'){
+    add('ip',t('fmt_ip'));
+    cfgs.forEach((c,i)=>add(String(i),(i+1)+'. '+lbl(c).slice(0,60)));
+    $('fmthint').textContent=t('fmt_hint_ip');
+    sel.value=[...sel.options].some(x=>x.value===prev)?prev:(cfgs.length?'0':'ip');
+  }else{
+    add('plain',t('fmt_plain'));add('url',t('fmt_url',{s:scheme()}));
+    $('fmthint').textContent=t('fmt_hint_px');
+    sel.value=[...sel.options].some(x=>x.value===prev)?prev:'plain';
+  }
+}
+const scheme=()=>S.kind==='socks'?'socks5':'http';
+function buildSelects(){
+  const fill=(id,vals,fn,def)=>{const s=$(id),p=s.value;s.innerHTML='';for(const v of vals){const o=document.createElement('option');o.value=v;o.textContent=fn(v);s.appendChild(o)}s.value=vals.map(String).includes(p)?p:String(def)};
+  fill('conc',[10,25,50,100,200],v=>t('conc',{n:v}),NATIVE?100:25);
+  fill('to',[3000,5000,8000,12000],v=>t('timeout',{n:v/1000}),8000);
+  fill('samples',[1,2,3],v=>t('samples',{n:v}),2);
+  fill('topn',[5,10,15,20,30,50],v=>t('top_n',{n:v}),15);
+}
+
+/* ---------------------------------------------------------------- configs */
+function lbl(c){try{if(/^vmess:/i.test(c)){const j=JSON.parse(decodeURIComponent(escape(atob(c.slice(8)))));return 'vmess · '+(j.ps||j.add)}
+  const m=c.match(/^([a-z0-9]+):\/\/[^@]*@([^:\/?#]+)[^#]*(?:#(.*))?$/i);return m[1]+' · '+(m[3]?decodeURIComponent(m[3]):m[2])}catch(e){return 'config'}}
+function swap(c,ip){
+  if(/^vmess:\/\//i.test(c)){try{const j=JSON.parse(decodeURIComponent(escape(atob(c.slice(8)))));j.add=ip;j.ps=(j.ps?j.ps+'-':'')+ip;return 'vmess://'+btoa(unescape(encodeURIComponent(JSON.stringify(j))))}catch(e){return null}}
+  const m=c.match(/^([a-z0-9]+:\/\/[^@\/?#]+@)(\[[^\]]+\]|[^:\/?#]+)(.*)$/i);if(!m)return null;
+  const r=m[3];return m[1]+ip+(r.includes('#')?r+'-'+ip:r+'#'+ip)}
+function parseCfgs(){
+  cfgs=$('cfg').value.split(/\r?\n/).map(s=>s.trim()).filter(s=>/^(vless|vmess|trojan|ss):\/\//i.test(s));
+  $('cmsg').textContent=cfgs.length?t('cfg_ready',{n:cfgs.length}):t('cfg_none');
+  store.set('cfg',$('cfg').value);buildFmt();
+  if(S.kind==='ip'&&cfgs.length&&$('fmt').value==='ip')$('fmt').value='0';
+}
+
+/* --------------------------------------------------------------- scanning */
+function pickItems(){
+  if(S.src==='range')return genRange(Math.max(1,Math.min(+$('cnt').value||1,RANGE_MAX)));
+  const c=$('country').value;
+  const p=((c&&c!=='*')?(S.groups[c]||[]):S.items).slice();
+  const n=Math.max(1,Math.min(+$('cnt').value||1,p.length));
+  if($('rand').checked)for(let i=0;i<n;i++){const j=i+Math.floor(Math.random()*(p.length-i));[p[i],p[j]]=[p[j],p[i]]}
+  return p.slice(0,n);
+}
+async function browserProbe(it,o){
+  const t=[];
+  for(let k=0;k<o.samples;k++){
+    const c=new AbortController(),id=setTimeout(()=>c.abort(),o.timeout),s=performance.now();
+    try{await fetch('http://'+it.host+'/cdn-cgi/trace?_='+Math.random(),{mode:'no-cors',cache:'no-store',signal:c.signal});t.push(performance.now()-s)}
+    catch(e){if(!t.length)break}finally{clearTimeout(id)}
+  }
+  if(!t.length)return{ok:false};
+  return{ok:true,ping:Math.min(...t),delay:t.reduce((a,b)=>a+b)/t.length,loss:Math.round((o.samples-t.length)/o.samples*100)};
+}
+function probe(it,o){
+  const b={timeout:o.timeout,samples:o.samples,host:it.host};
+  switch(o.method){
+    case'real':return nat('real',{...b,sni:o.sni});
+    case'icmp':return nat('icmp',b);
+    case'tcp':return nat('tcp',{...b,port:it.port});
+    case'socks5':return nat('socks5',{...b,port:it.port,user:it.user,pass:it.pass,https:o.https});
+    case'http':return nat('http',{...b,port:it.port,user:it.user,pass:it.pass,tunnel:false});
+    case'connect':return nat('http',{...b,port:it.port,user:it.user,pass:it.pass,tunnel:true});
+    default:return browserProbe(it,o);
+  }
+}
+async function startScan(){
+  if(S.scanning)return;
+  const list=pickItems();
+  if(!list.length){toast(t('empty_list'));return}
+  const o={method:$('method').value,timeout:+$('to').value,samples:+$('samples').value,sni:$('sni').value.trim()||'www.cloudflare.com',https:$('https').checked};
+  if(!o.method)return;
+  const conc=+$('conc').value,tok=++S.token;
+  S.scanning=true;S.res=[];S.failed=0;S.done=0;S.total=list.length;S.seen=new Set();S.filterCC='*';S.geoBusy=false;S.lastMethod=o.method;S.errs={};$('why').hidden=true;
+  $('scan').classList.add('scanning');$('go').disabled=true;$('stop').disabled=false;
+  if(NATIVE){try{Native.keepOn(true)}catch(e){}}
+  buildResultCC();render();
+  let next=0;
+  const worker=async()=>{
+    while(S.token===tok&&next<list.length){
+      const it=list[next++];
+      let r;try{r=await probe(it,o)}catch(e){r={ok:false}}
+      if(S.token!==tok)return;
+      S.done++;
+      if(r&&r.ok)S.res.push({...it,ping:r.ping,delay:r.delay,loss:r.loss||0,colo:r.colo||null,cc:it.cc||null});
+      else if(r&&r.err)S.errs[r.err]=(S.errs[r.err]||0)+1;
+      if(!(r&&r.ok))S.failed++;
+      schedule();
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(conc,list.length)},worker));
+  if(S.token!==tok)return;
+  finish(false);
+}
+function stopScan(){if(!S.scanning)return;S.token++;finish(true)}
+function finish(stopped){
+  S.scanning=false;
+  $('scan').classList.remove('scanning');$('stop').disabled=true;buildMethods();buildResultCC();
+  if(NATIVE){try{Native.keepOn(false)}catch(e){}}
+  render();
+  showWhy();
+  toast(stopped?t('t_stopped'):t('t_done',{n:S.res.length,m:S.failed}));
+  resolveGeo();
+}
+const ERRX={en:{timeout:'timed out',refused:'connection refused',closed:'closed by server',reset:'connection reset',tls:'TLS failed',io:'I/O error',dns:'DNS failed','not-socks5':'not a SOCKS5 server','needs-auth':'needs login','auth-failed':'login rejected'},
+fa:{timeout:'تایم‌اوت',refused:'اتصال رد شد',closed:'سرور بست',reset:'اتصال ریست شد',tls:'خطای TLS',io:'خطای I/O',dns:'خطای DNS','not-socks5':'SOCKS5 نیست','needs-auth':'نیاز به رمز','auth-failed':'رمز رد شد'}};
+function showWhy(){
+  const e=Object.entries(S.errs||{}).sort((a,b)=>b[1]-a[1]).slice(0,5),w=$('why');
+  if(!e.length||!S.failed){w.hidden=true;return}
+  w.textContent=t('why')+' '+e.map(([k,n])=>((ERRX[lang]||ERRX.en)[k]||k)+' ×'+n).join(' · ');w.hidden=false;
+}
+let _rt=0;
+function schedule(){if(_rt)return;_rt=setTimeout(()=>{_rt=0;render()},600)}
+
+async function resolveGeo(){
+  const arr=S.res;
+  const top=arr.slice().sort((a,b)=>score(a)-score(b)).slice(0,100).filter(r=>/^\d+\.\d+\.\d+\.\d+$/.test(r.host));
+  if(!top.length)return;
+  S.geoBusy=true;render();
+  let map={};
+  try{
+    if(NATIVE){const r=await nat('geo',{ips:top.map(r=>r.host),timeout:20000});if(r.ok)map=r.map||{}}
+    else{
+      let i=0;
+      const w=async()=>{while(i<top.length){const r=top[i++];try{const c=new AbortController(),id=setTimeout(()=>c.abort(),4000);
+        const j=await (await fetch('https://ipwho.is/'+r.host+'?fields=success,country_code',{signal:c.signal})).json();clearTimeout(id);if(j.success)map[r.host]=j.country_code}catch(e){}}};
+      await Promise.all(Array.from({length:6},w));
+    }
+  }catch(e){}
+  if(S.res!==arr)return;
+  for(const r of top)if(map[r.host])r.cc=String(map[r.host]).toUpperCase();
+  S.geoBusy=false;buildResultCC();render();
+}
+
+/* ---------------------------------------------------------------- results */
+const score=r=>r.loss*20+r.delay;
+function view(){let a=S.res.slice().sort((x,y)=>score(x)-score(y));if(S.filterCC!=='*')a=a.filter(r=>r.cc===S.filterCC);return a}
+const ms=v=>Math.round(v)+' ms';
+const fast=()=>S.lastMethod==='real'||S.lastMethod==='icmp'||S.lastMethod==='browser'||(S.lastMethod==='tcp'&&S.kind==='ip');
+function cls(v){const g=fast()?150:600,m=fast()?400:1500;return v<g?'good':v<m?'mid':'bad'}
+function buildResultCC(){
+  const sel=$('rcc'),prev=S.filterCC,count={};
+  for(const r of S.res)if(r.cc)count[r.cc]=(count[r.cc]||0)+1;
+  sel.innerHTML='';
+  const o=document.createElement('option');o.value='*';o.textContent='🌐 '+t('all_found');sel.appendChild(o);
+  for(const cc of Object.keys(count).sort((a,b)=>count[b]-count[a])){const e=document.createElement('option');e.value=cc;e.textContent=flag(cc)+' '+cname(cc)+' — '+count[cc];sel.appendChild(e)}
+  sel.value=count[prev]?prev:'*';S.filterCC=sel.value;
+}
+function bumpEl(el,txt){const s=String(txt);if(el.textContent!==s){el.textContent=s;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}}
+function render(){
+  bumpEl($('s1'),S.done);bumpEl($('s2'),S.total);bumpEl($('s3'),S.res.length);bumpEl($('s4'),S.failed);
+  let best=Infinity;for(const r of S.res)if(r.delay<best)best=r.delay;
+  $('s5').textContent=best===Infinity?'–':ms(best);
+  $('pb').style.width=(S.total?S.done/S.total*100:0)+'%';
+  const v=view(),topN=+$('topn').value||15,tb=$('tbody');
+  if(!v.length){
+    tb.innerHTML='<tr><td colspan="8" class="em">'+esc(S.total&&!S.scanning?t('none'):t('empty'))+'</td></tr>';
+  }else{
+    const scale=fast()?10:25;
+    tb.innerHTML=v.slice(0,S.scanning?30:100).map((r,i)=>{
+      const k=r.addr+'|'+r.user,isNew=!S.seen.has(k);S.seen.add(k);
+      const co=r.cc?'<span class="fl">'+flag(r.cc)+'</span>'+esc(cname(r.cc)):(S.geoBusy?'…':'—');
+      const w=Math.max(6,Math.min(100,100-r.delay/scale));
+      return '<tr class="'+(i<topN?'top ':'')+(isNew&&S.scanning?'new':'')+'" data-k="'+esc(k)+'"><td class="rk n">'+(i+1)+'</td><td class="ip">'+esc(r.addr)+'</td><td>'+co+'</td>'+
+        '<td class="n '+cls(r.ping)+'">'+ms(r.ping)+'</td><td class="n '+cls(r.delay)+'">'+ms(r.delay)+'<i class="spd" style="--w:'+w+'%"></i></td>'+
+        '<td class="n '+(r.loss?'bad':'')+'">'+r.loss+'%</td><td class="n mu">'+esc(r.colo||'')+'</td><td><button class="cp" data-k="'+esc(k)+'">'+esc(t('copy'))+'</button></td></tr>';
+    }).join('');
+  }
+  $('ctop').textContent=t('copy_top',{n:topN});
+  const has=S.res.length>0;$('ctop').disabled=$('call').disabled=$('dl').disabled=!has;
+}
+
+/* ------------------------------------------------------------ copy / save */
+function fmtAddr(r){
+  const v=$('fmt').value;
+  if(S.kind==='ip'){if(v==='ip'||!cfgs[+v])return r.host;return swap(cfgs[+v],r.host)||r.host}
+  if(v==='plain')return r.addr;
+  return scheme()+'://'+(r.user?r.user+':'+r.pass+'@':'')+r.addr;
+}
+const joinOut=a=>S.fmtMode==='comma'?a.join(', '):a.join('\n');
+let _tt=0;
+function toast(msg){const e=$('toast');e.textContent=msg;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),2200)}
+async function copyText(txt,n){
+  if(!txt){toast(t('t_nothing'));return}
+  let ok=false;
+  if(NATIVE){const r=await nat('copy',{text:txt});ok=!!r.ok}
+  if(!ok){
+    try{await navigator.clipboard.writeText(txt);ok=true}catch(e){
+      const a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{ok=document.execCommand('copy')}catch(x){}a.remove()}
+  }
+  if(ok)toast(t('t_copied',{n}));
+}
+window.__saved=ok=>toast(ok?t('t_saved'):t('t_notsaved'));
+async function saveText(name,txt){
+  if(!txt){toast(t('t_nothing'));return}
+  if(NATIVE){await nat('save',{name,text:txt});return}
+  const u=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));
+  const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast(t('t_saved'));
+}
+
+/* ----------------------------------------------------------------- events */
+function ripple(e){
+  const b=e.target.closest('button.p');if(!b)return;
+  const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height)*2,s=document.createElement('span');
+  s.className='rip';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';
+  b.appendChild(s);setTimeout(()=>s.remove(),600);
+}
+document.addEventListener('pointerdown',ripple);
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>b.dataset.src==='range'?openRange():loadSource(b.dataset.src));
+$('rapply').onclick=applyRanges;$('rcf').onclick=()=>{$('rtxt').value=CF_RANGES;applyRanges()};
+$('reload').onclick=()=>{if(S.src==='custom'){toast(t('t_nothing'));return}loadSource(S.src)};
+$('chips').onclick=e=>{const n=e.target.dataset&&e.target.dataset.n;if(!n)return;$('cnt').value=n==='all'?(S.src==='range'?Math.min((S.rng&&S.rng.total)||1,RANGE_MAX):(S.items.length||1)):n;syncChips()};
+function syncChips(){document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.n===$('cnt').value))}
+$('cnt').oninput=()=>{syncChips();store.set('cnt',$('cnt').value)};
+$('country').onchange=()=>{};
+$('go').onclick=startScan;$('stop').onclick=stopScan;
+$('method').onchange=()=>{updateNote();store.set('method',$('method').value)};
+['conc','to','samples','topn'].forEach(id=>$(id).onchange=()=>{store.set(id,$(id).value);if(id==='topn')render()});
+$('sni').onchange=()=>store.set('sni',$('sni').value);
+$('https').onchange=()=>store.set('https',$('https').checked?'1':'0');
+$('rand').onchange=()=>store.set('rand',$('rand').checked?'1':'0');
+$('cfg').oninput=parseCfgs;
+$('imp').onclick=()=>$('fileCfg').click();
+$('fileCfg').onchange=async e=>{const f=e.target.files[0];if(!f)return;const x=await f.text();$('cfg').value=($('cfg').value.trim()+'\n'+x).trim();parseCfgs();e.target.value=''};
+$('cfile').onclick=()=>$('fileList').click();
+$('fileList').onchange=async e=>{const f=e.target.files[0];if(!f)return;loadCustom(await f.text(),'st_file');e.target.value=''};
+$('cload').onclick=async()=>{
+  const u=$('curl').value.trim();if(!u)return;
+  $('lmsg').textContent=t('loading');
+  try{loadCustom(await getText(u),'st_url')}catch(e){$('lmsg').textContent=t('load_fail')}
+};
+$('kind').onchange=()=>{};
+$('rcc').onchange=()=>{S.filterCC=$('rcc').value;render()};
+$('fmtseg').onclick=e=>{const f=e.target.dataset&&e.target.dataset.f;if(!f)return;S.fmtMode=f;store.set('fmtMode',f);document.querySelectorAll('#fmtseg button').forEach(b=>b.classList.toggle('on',b.dataset.f===f))};
+$('ctop').onclick=()=>{const a=view().slice(0,+$('topn').value||15);copyText(joinOut(a.map(fmtAddr)),a.length)};
+$('call').onclick=()=>{const a=view();copyText(joinOut(a.map(fmtAddr)),a.length)};
+$('dl').onclick=()=>{const a=view();saveText('ip-scanner-'+S.kind+'.txt',a.map(fmtAddr).join('\n'))};
+$('tbody').onclick=e=>{
+  const b=e.target.closest('button.cp');if(!b)return;
+  const k=b.dataset.k,r=S.res.find(x=>x.addr+'|'+x.user===k);if(!r)return;
+  copyText(fmtAddr(r),1);
+  const tr=b.closest('tr');tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');
+};
+$('lang').onclick=()=>{lang=lang==='fa'?'en':'fa';store.set('lang',lang);applyLang(true)};
+
+function applyLang(anim){
+  document.documentElement.lang=lang;document.documentElement.dir=lang==='fa'?'rtl':'ltr';
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+  document.querySelectorAll('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
+  $('lang').textContent=lang==='fa'?'English':'فارسی';
+  const kinds=[['ip','kind_ip'],['socks','kind_socks'],['http','kind_http'],['https','kind_https']],kv=$('kind').value||'ip';
+  $('kind').innerHTML='';for(const [v,k] of kinds){const o=document.createElement('option');o.value=v;o.textContent=t(k);$('kind').appendChild(o)}$('kind').value=kv;
+  buildSelects();buildCountry();buildMethods();buildFmt();buildResultCC();
+  $('eng').className='badge '+(NATIVE?'ok':'warn');$('eng').textContent=t(NATIVE?'eng_native':'eng_browser');
+  const sb=$('srcbadge');if(S.items.length)sb.textContent=t(S.statusKey);
+  $('lmsg').textContent=S.items.length?t('loaded',{n:S.items.length.toLocaleString()}):'';
+  $('cmsg').textContent=cfgs.length?t('cfg_ready',{n:cfgs.length}):t('cfg_none');
+  render();
+  if(anim){const a=$('app');a.classList.remove('fade');void a.offsetWidth;a.classList.add('fade')}
+}
+
+/* ------------------------------------------------------------------ boot */
+(function boot(){
+  lang=store.get('lang',(navigator.language||'').toLowerCase().startsWith('fa')?'fa':'en');
+  $('cfg').value=store.get('cfg','');
+  $('cnt').value=store.get('cnt','200');
+  $('sni').value=store.get('sni','www.cloudflare.com');
+  $('https').checked=store.get('https','1')==='1';
+  $('rand').checked=store.get('rand','1')==='1';
+  S.fmtMode=store.get('fmtMode','lines');
+  document.querySelectorAll('#fmtseg button').forEach(b=>b.classList.toggle('on',b.dataset.f===S.fmtMode));
+  parseCfgs();
+  applyLang(false);
+  for(const id of ['conc','to','samples','topn']){const v=store.get(id,null);if(v&&[...$(id).options].some(o=>o.value===v))$(id).value=v}
+  syncChips();render();
+  const saved=store.get('src','zeus');
+  try{const rt=store.get('rtxt','');if(rt)$('rtxt').value=rt}catch(e){}
+  if(saved==='range')openRange();else loadSource(SRC[saved]&&saved!=='custom'?saved:'zeus');
+})();
+</script></body></html>
