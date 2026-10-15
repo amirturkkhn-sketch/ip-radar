@@ -41,7 +41,7 @@ jobs:
           name: IP-Radar-universal-apk
           path: IP-Radar-universal.apk
       - name: Publish release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
