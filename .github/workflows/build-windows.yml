@@ -28,24 +28,26 @@ jobs:
           name: desktop-app
           path: desktop/build/app
 
+  # Which CPU types to build. Windows ARM runners exist only for public repositories.
+  prep:
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.m.outputs.list }}
+    steps:
+      - id: m
+        run: |
+          X='{"arch":"x64","runner":"windows-latest","java_arch":"x64"},{"arch":"x86","runner":"windows-latest","java_arch":"x86"}'
+          if [ "${{ github.event.repository.private }}" = "false" ]; then
+            X="$X"',{"arch":"arm64","runner":"windows-11-arm","java_arch":"aarch64"}'
+          fi
+          echo "list={\"include\":[$X]}" >> "$GITHUB_OUTPUT"
+
   # 2) Wrap it with its own small Java runtime for each CPU type.
   package:
-    needs: jar
+    needs: [jar, prep]
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            runner: windows-latest
-            java_arch: x64
-          - arch: x86
-            runner: windows-latest
-            java_arch: x86
-          - arch: arm64
-            runner: windows-11-arm
-            java_arch: aarch64
-    # Windows ARM runners exist only for public repositories; on private repos the ARM PCs use the x64 build (Windows emulates it).
-    if: ${{ matrix.arch != 'arm64' || github.event.repository.private == false }}
+      matrix: ${{ fromJSON(needs.prep.outputs.list) }}
     runs-on: ${{ matrix.runner }}
     continue-on-error: ${{ matrix.arch == 'arm64' }}
     steps:
