@@ -1,0 +1,173 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # 1) Compile the Kotlin desktop app once (the jar runs on any CPU).
+  jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build jar
+        run: |
+          chmod +x gradlew
+          ./gradlew -p desktop jar collect --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app
+          path: desktop/build/app
+
+  # 2) Wrap it with its own small Java runtime for each CPU type.
+  package:
+    needs: jar
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-latest
+            java_arch: x64
+          - arch: x86
+            runner: windows-latest
+            java_arch: x86
+          - arch: arm64
+            runner: windows-11-arm
+            java_arch: aarch64
+    # Windows ARM runners exist only for public repositories; on private repos the ARM PCs use the x64 build (Windows emulates it).
+    if: ${{ matrix.arch != 'arm64' || github.event.repository.private == false }}
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: ${{ matrix.arch == 'arm64' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-app
+          path: app
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+          architecture: ${{ matrix.java_arch }}
+      - name: Make the app folder (own Java runtime included)
+        shell: pwsh
+        run: |
+          $ver = "1.0.${{ github.run_number }}"
+          jpackage --type app-image --name "IP Radar" --input app --main-jar ipradar.jar `
+            --main-class app.ipscanner.DesktopKt --dest dist/${{ matrix.arch }} `
+            --icon desktop/icon.ico --app-version $ver --vendor "IP Radar" `
+            --add-modules java.base,java.logging,jdk.httpserver,jdk.crypto.ec `
+            --java-options "-Xmx384m"
+          Get-ChildItem dist/${{ matrix.arch }}
+      - name: Portable zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/${{ matrix.arch }}/IP Radar" -DestinationPath "IP-Radar-win-${{ matrix.arch }}-portable.zip"
+      - name: Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" }
+          New-Item -ItemType Directory -Force desktop/dist | Out-Null
+          Copy-Item -Recurse -Force dist/${{ matrix.arch }} desktop/dist/${{ matrix.arch }}
+          & $iscc "/DAppVer=1.0.${{ github.run_number }}" "/DArch=${{ matrix.arch }}" "/DOutName=IP-Radar-Setup-${{ matrix.arch }}" desktop/installer.iss
+          Move-Item desktop/out/*.exe .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-${{ matrix.arch }}
+          path: |
+            IP-Radar-win-${{ matrix.arch }}-portable.zip
+            IP-Radar-Setup-${{ matrix.arch }}.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.arch }}
+          path: dist/${{ matrix.arch }}
+
+  # 3) One installer / one zip that works on every Windows PC (picks the right CPU build itself).
+  universal:
+    needs: package
+    if: ${{ !cancelled() && needs.package.result != 'failure' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: desktop/dist
+          merge-multiple: false
+      - name: Fix folder names (dist-x64 -> x64)
+        shell: pwsh
+        run: |
+          Get-ChildItem desktop/dist -Directory | ForEach-Object {
+            $n = $_.Name -replace '^dist-',''
+            if ($_.Name -ne $n) { Rename-Item $_.FullName $n }
+          }
+          Get-ChildItem desktop/dist
+      - name: Universal installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe" }
+          & $iscc "/DAppVer=1.0.${{ github.run_number }}" "/DArch=universal" "/DOutName=IP-Radar-Setup-universal" desktop/installer.iss
+          Move-Item desktop/out/*.exe .
+      - name: Universal portable zip (all CPUs + launcher)
+        shell: pwsh
+        run: |
+          $root = "IP-Radar-portable"
+          New-Item -ItemType Directory -Force $root | Out-Null
+          foreach ($a in 'x64','x86','arm64') {
+            $src = "desktop/dist/$a/IP Radar"
+            if (Test-Path $src) { Copy-Item -Recurse $src "$root/$a" }
+          }
+          @'
+          @echo off
+          setlocal
+          set "A=x86"
+          if /I "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "A=x64"
+          if /I "%PROCESSOR_ARCHITEW6432%"=="AMD64" set "A=x64"
+          if /I "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "A=arm64"
+          if /I "%PROCESSOR_ARCHITEW6432%"=="ARM64" set "A=arm64"
+          if not exist "%~dp0%A%\IP Radar.exe" (
+            if exist "%~dp0x64\IP Radar.exe" (set "A=x64") else (set "A=x86")
+          )
+          start "" "%~dp0%A%\IP Radar.exe"
+          '@ -replace '(?m)^\s{10}','' | Set-Content -Encoding ASCII "$root/IP Radar.bat"
+          Compress-Archive -Path "$root/*" -DestinationPath IP-Radar-win-universal-portable.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-universal
+          path: |
+            IP-Radar-Setup-universal.exe
+            IP-Radar-win-universal-portable.zip
+
+  release:
+    needs: [package, universal]
+    if: ${{ !cancelled() && github.event_name == 'push' && needs.universal.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: win-*
+          path: rel
+          merge-multiple: true
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls -la rel
+          gh release create "win-v1.0-${{ github.run_number }}" rel/* \
+            --title "IP Radar for Windows, build ${{ github.run_number }}" \
+            --notes "Recommended: IP-Radar-Setup-universal.exe (installs the right build for your PC: 32-bit, 64-bit or ARM). Portable: IP-Radar-win-universal-portable.zip, unzip and run 'IP Radar.bat'. Needs Microsoft Edge or Chrome (already on Windows 10/11)."

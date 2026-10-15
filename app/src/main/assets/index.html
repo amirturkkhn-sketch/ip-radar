@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr"><head><meta charset="utf-8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23c6f45b%27 stroke-width=%272%27 stroke-linecap=%27round%27%3E%3Crect x=%270%27 y=%270%27 width=%2724%27 height=%2724%27 rx=%276%27 fill=%27%230a0f0b%27 stroke=%27none%27/%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%278%27/%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%274%27/%3E%3Cpath d=%27M12 12 18 6%27/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>IP Scanner</title>
@@ -191,6 +192,20 @@ input[type=checkbox]{accent-color:#c6f45b}
 <div id="toast" class="toast"></div>
 <input id="fileList" type="file" hidden><input id="fileCfg" type="file" hidden>
 
+<script>
+/* Desktop (Windows) build: the same page talks to the local engine over HTTP instead of the Android bridge. */
+if(location.protocol==='http:'&&location.hostname==='127.0.0.1'&&typeof Native==='undefined'){
+  window.__DESKTOP=true;
+  window.Native={version(){return'desktop-1'},keepOn(){},
+    req(id,m,a){
+      fetch('/api',{method:'POST',headers:{'X-IPR':'1','Content-Type':'application/json'},body:JSON.stringify({method:m,args:JSON.parse(a)})})
+        .then(r=>r.text()).then(t=>window.__nat(id,t)).catch(()=>window.__nat(id,JSON.stringify({ok:false,err:'engine'})));
+    }};
+  const beat=()=>fetch('/api/ping',{headers:{'X-IPR':'1'}}).catch(()=>{});
+  beat();setInterval(beat,3000);
+  addEventListener('pagehide',()=>{try{navigator.sendBeacon('/api/bye')}catch(e){}});
+}
+</script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -660,7 +675,7 @@ async function copyText(txt,n){
 window.__saved=ok=>toast(ok?t('t_saved'):t('t_notsaved'));
 async function saveText(name,txt){
   if(!txt){toast(t('t_nothing'));return}
-  if(NATIVE){await nat('save',{name,text:txt});return}
+  if(NATIVE&&!window.__DESKTOP){await nat('save',{name,text:txt});return}
   const u=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));
   const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast(t('t_saved'));
 }

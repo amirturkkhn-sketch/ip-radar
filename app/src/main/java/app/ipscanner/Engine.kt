@@ -208,6 +208,7 @@ object Engine {
         val n = if (samples < 1) 1 else if (samples > 5) 5 else samples
         if (!Regex("^[A-Za-z0-9.:_-]+$").matches(host)) return Probe(false, 0.0, 0.0, 100, null, null, "bad-host")
         val wait = maxOf(1, (timeoutMs + 999) / 1000)
+        if (System.getProperty("os.name", "").lowercase().contains("win")) return icmpWindows(host, n, timeoutMs)
         val cmds = listOf(
             listOf("/system/bin/ping", "-c", n.toString(), "-W", wait.toString(), host),
             listOf("ping", "-c", n.toString(), "-W", wait.toString(), host),
@@ -243,6 +244,42 @@ object Engine {
             }
         }
         return Probe(false, 0.0, 0.0, 100, null, null, lastErr)
+    }
+
+    /** Windows: ping -n N -w ms host (replies look like "Reply from x: bytes=32 time=12ms TTL=57"). */
+    private fun icmpWindows(host: String, n: Int, timeoutMs: Int): Probe {
+        var p: Process? = null
+        try {
+            val proc: Process = ProcessBuilder("ping", "-n", n.toString(), "-w", timeoutMs.toString(), host)
+                .redirectErrorStream(true).start()
+            p = proc
+            val killer = Thread {
+                try { Thread.sleep(n * timeoutMs.toLong() + 3000L); proc.destroy() } catch (_: InterruptedException) {}
+            }
+            killer.isDaemon = true
+            killer.start()
+            val out = try { proc.inputStream.bufferedReader().readText() } finally { killer.interrupt() }
+            val times = parsePingWindows(out)
+            if (times.isEmpty()) return Probe(false, 0.0, 0.0, 100, null, null, "no-reply")
+            val loss = Math.round((n - times.size) * 100.0 / n).toInt()
+            return Probe(true, times.min(), times.average(), if (loss < 0) 0 else loss, null, null, null)
+        } catch (e: IOException) {
+            return Probe(false, 0.0, 0.0, 100, null, null, "no-ping-binary")
+        } finally {
+            try { p?.destroy() } catch (_: Exception) {}
+        }
+    }
+
+    fun parsePingWindows(out: String): List<Double> {
+        val r = Regex("([=<])\\s*([0-9]+)\\s*ms", RegexOption.IGNORE_CASE)
+        val res = ArrayList<Double>()
+        for (line in out.lineSequence()) {
+            if (!line.contains("TTL", ignoreCase = true)) continue
+            val m = r.find(line) ?: continue
+            val v = m.groupValues[2].toDouble()
+            res.add(if (m.groupValues[1] == "<") 0.5 else v)
+        }
+        return res
     }
 
     fun parsePing(out: String): List<Double> {
