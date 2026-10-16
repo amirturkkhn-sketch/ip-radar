@@ -77,6 +77,11 @@ class MainActivity : Activity() {
         }
 
         web.webViewClient = object : WebViewClient() {
+            // If the WebView's render process dies (low memory), restart the screen instead of crashing the app.
+            override fun onRenderProcessGone(view: WebView?, detail: android.webkit.RenderProcessGoneDetail?): Boolean {
+                runOnUiThread { recreate() }
+                return true
+            }
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val u = request?.url ?: return true
                 if (u.scheme == "file") return false
