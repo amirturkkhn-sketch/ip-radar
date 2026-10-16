@@ -106,9 +106,10 @@ td button{padding:4px 12px;font-size:12px;border-radius:10px}
 .fade{animation:fade .35s}
 @keyframes fade{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-.ft{text-align:center;color:var(--mu);font-size:13px;padding:22px 14px 90px;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif}.ft b{color:var(--tx)}.ft small{display:block;font-size:10.5px;opacity:.65;margin-top:3px}
+.ft{text-align:center;color:var(--mu);font-size:13px;padding:22px 14px 90px;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif}.ft b{display:block;color:var(--tx);font-size:14.5px;font-weight:800}.ft small{display:block;font-size:10.5px;opacity:.65;margin-top:4px}
 input[type=checkbox]{accent-color:#c6f45b}
 [hidden]{display:none!important}
+.upd{position:fixed;inset:0;z-index:99999;background:rgba(5,8,5,.94);display:flex;align-items:center;justify-content:center;padding:20px}.upd .bx{max-width:380px;width:100%;background:#111a0f;border:1px solid var(--ac);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.7)}.upd h2{margin:0 0 10px;font-size:19px;color:var(--ac)}.upd p{margin:0 0 20px;font-size:14px;line-height:1.8;color:var(--tx)}.upd button{width:100%;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#0a0f0b;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
 </style></head><body>
 <div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="w" id="app">
@@ -188,7 +189,8 @@ input[type=checkbox]{accent-color:#c6f45b}
   <tbody id="tbody"></tbody></table></div>
   <p class="m" id="note"></p>
 </div>
-<footer class="ft">تیم<b>میلی‌کانفیگ</b><small>by_elyasin</small></footer>
+<div class="upd" id="upd" hidden><div class="bx"><h2 data-i="upd_t"></h2><p data-i="upd_m"></p><button id="updgo" data-i="upd_b"></button></div></div>
+<footer class="ft"><b>تیم میلی‌کانفیگ</b><small>ساخته‌شده با ❤️ توسط الیاسین اطمینان</small></footer>
 <div id="toast" class="toast"></div>
 <input id="fileList" type="file" hidden><input id="fileCfg" type="file" hidden>
 
@@ -196,7 +198,7 @@ input[type=checkbox]{accent-color:#c6f45b}
 /* Desktop (Windows) build: the same page talks to the local engine over HTTP instead of the Android bridge. */
 if(location.protocol==='http:'&&location.hostname==='127.0.0.1'&&typeof Native==='undefined'){
   window.__DESKTOP=true;
-  window.Native={version(){return'desktop-1'},keepOn(){},
+  window.Native={version(){return'desktop:'+(window.__APPVER||'1.0.1')},keepOn(){},
     req(id,m,a){
       fetch('/api',{method:'POST',headers:{'X-IPR':'1','Content-Type':'application/json'},body:JSON.stringify({method:m,args:JSON.parse(a)})})
         .then(r=>r.text()).then(t=>window.__nat(id,t)).catch(()=>window.__nat(id,JSON.stringify({ok:false,err:'engine'})));
@@ -726,6 +728,33 @@ $('tbody').onclick=e=>{
   copyText(fmtAddr(r),1);
   const tr=b.closest('tr');tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');
 };
+
+I18N.en.upd_t='New version available';I18N.en.upd_m='Please install the new version for a better experience.';I18N.en.upd_b='Update now';
+I18N.fa.upd_t='نسخه‌ی جدید آماده است';I18N.fa.upd_m='لطفاً برای تجربه‌ی بهتر، نسخه‌ی جدید را نصب کنید.';I18N.fa.upd_b='به‌روزرسانی';
+
+/* ------------------------------------------------------------------ forced update (per platform) */
+const REPO='elyasninjago03366-dev/ip-radar';
+let updUrl='';
+async function checkUpdate(){
+  if(!NATIVE||$('upd')&&!$('upd').hidden)return;
+  try{
+    const v=String(Native.version());const m=/^(android|desktop):[\d.]*?(\d+)$/.exec(v);if(!m)return;
+    const desk=m[1]==='desktop',cur=+m[2];
+    const re=desk?/^win-v[\d.]+-(\d+)$/:/^v[\d.]+-(\d+)$/;
+    const r=await nat('fetch',{url:'https://api.github.com/repos/'+REPO+'/releases?per_page=30',timeout:15000});
+    if(!r||!r.ok)return;
+    const list=JSON.parse(r.text);let best=null,bn=0;
+    for(const x of list){if(x.draft||x.prerelease)continue;const k=re.exec(x.tag_name||'');if(k&&+k[1]>bn){bn=+k[1];best=x}}
+    if(!best||bn<=cur)return;
+    const as=best.assets||[];
+    const a=as.find(z=>desk?/Setup-universal\.exe$/i.test(z.name):/universal\.apk$/i.test(z.name))||as.find(z=>desk?/\.exe$/i.test(z.name):/\.apk$/i.test(z.name));
+    updUrl=a?a.browser_download_url:best.html_url;
+    $('upd').hidden=false;
+  }catch(e){}
+}
+$('updgo').onclick=()=>{if(!updUrl)return;if(window.__DESKTOP){const a=document.createElement('a');a.href=updUrl;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}else location.href=updUrl};
+addEventListener('keydown',e=>{if(!$('upd').hidden){e.preventDefault();e.stopPropagation()}},true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
 $('lang').onclick=()=>{lang=lang==='fa'?'en':'fa';store.set('lang',lang);applyLang(true)};
 
 function applyLang(anim){
@@ -763,5 +792,6 @@ function applyLang(anim){
   try{const rt=store.get('rtxt','');if(rt)$('rtxt').value=rt}catch(e){}
   try{const mt=store.get('mtxt','');if(mt)$('mtxt').value=mt}catch(e){}
   if(saved==='range')openRange();else if(saved==='manual')openManual();else loadSource(SRC[saved]&&saved!=='custom'?saved:'zeus');
+  checkUpdate();
 })();
 </script></body></html>

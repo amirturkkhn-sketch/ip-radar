@@ -157,7 +157,9 @@ class Bridge(private val act: MainActivity) {
     }
 
     @JavascriptInterface
-    fun version(): String = "native-1"
+    fun version(): String = try {
+        "android:" + (act.packageManager.getPackageInfo(act.packageName, 0).versionName ?: "1.0.1")
+    } catch (e: Exception) { "android:1.0.1" }
 
     @JavascriptInterface
     fun keepOn(on: Boolean) {

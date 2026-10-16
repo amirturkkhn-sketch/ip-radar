@@ -18,7 +18,10 @@ tasks.compileKotlin { dependsOn(syncEngine) }
 
 tasks.jar {
     archiveFileName.set("ipradar.jar")
-    manifest { attributes["Main-Class"] = "app.ipscanner.DesktopKt" }
+    manifest {
+        attributes["Main-Class"] = "app.ipscanner.DesktopKt"
+        attributes["Implementation-Version"] = "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "1")
+    }
 }
 
 // Everything jpackage needs in one folder: build/app/ipradar.jar + kotlin-stdlib.

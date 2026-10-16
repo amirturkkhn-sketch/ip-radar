@@ -220,7 +220,11 @@ fun main(args: Array<String>) {
     }
     val port = server.address.port
     val allowedHosts = setOf("127.0.0.1:$port", "localhost:$port")
-    val index = Json::class.java.getResourceAsStream("/index.html")?.readBytes() ?: ByteArray(0)
+    val appVer = Json::class.java.`package`?.implementationVersion ?: "1.0.1"
+    val index = (Json::class.java.getResourceAsStream("/index.html")?.readBytes() ?: ByteArray(0))
+        .toString(Charsets.UTF_8)
+        .replaceFirst("<script>", "<script>window.__APPVER=\"" + appVer + "\";")
+        .toByteArray(Charsets.UTF_8)
     val pool = Executors.newCachedThreadPool { r -> Thread(r).also { it.isDaemon = true } }
     server.executor = pool
 
