@@ -125,7 +125,7 @@ tr.tp{box-shadow:inset 3px 0 0 var(--ac)}[dir=rtl] tr.tp{box-shadow:inset -3px 0
 .ft{text-align:center;color:var(--mu);font-size:13px;padding:22px 14px 90px;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif}.ft b{display:block;color:var(--tx);font-size:14.5px;font-weight:800}.ft small{display:block;font-size:10.5px;opacity:.65;margin-top:4px}
 input[type=checkbox]{accent-color:#c6f45b}
 [hidden]{display:none!important}
-.upd{position:fixed;inset:0;z-index:99999;background:rgba(5,8,5,.94);display:flex;align-items:center;justify-content:center;padding:20px}.upd .bx{max-width:380px;width:100%;background:#111a0f;border:1px solid var(--ac);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.7)}.upd h2{margin:0 0 10px;font-size:19px;color:var(--ac)}.upd p{margin:0 0 20px;font-size:14px;line-height:1.8;color:var(--tx)}.upd button{width:100%;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#0a0f0b;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
+.upd{position:fixed;inset:0;z-index:99999;background:rgba(5,8,5,.94);display:flex;align-items:center;justify-content:center;padding:20px}.upd .bx{position:relative;max-width:380px;width:100%;background:#111a0f;border:1px solid var(--ac);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.7)}.upd h2{margin:0 0 10px;font-size:19px;color:var(--ac)}.upd p{margin:0 0 20px;font-size:14px;line-height:1.8;color:var(--tx)}.upd .x{position:absolute;top:10px;inset-inline-end:10px;width:34px;height:34px;padding:0;border-radius:50%;background:rgba(255,255,255,.08);color:var(--tx);font-size:15px}.upd #updgo{width:100%;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#0a0f0b;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
 </style></head><body>
 <div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="w" id="app">
@@ -205,7 +205,7 @@ input[type=checkbox]{accent-color:#c6f45b}
   <tbody id="tbody"></tbody></table></div>
   <p class="m" id="note"></p>
 </div>
-<div class="upd" id="upd" hidden><div class="bx"><h2 data-i="upd_t"></h2><p data-i="upd_m"></p><button id="updgo" data-i="upd_b"></button></div></div>
+<div class="upd" id="upd" hidden><div class="bx"><button class="x" id="updx" aria-label="Close">✕</button><h2 data-i="upd_t"></h2><p data-i="upd_m"></p><button id="updgo" data-i="upd_b"></button></div></div>
 <footer class="ft"><b>تیم میلی‌کانفیگ</b><small>ساخته‌شده با ❤️ توسط الیاسین اطمینان</small></footer>
 <div id="toast" class="toast"></div>
 <input id="fileList" type="file" hidden><input id="fileCfg" type="file" hidden>
@@ -750,9 +750,9 @@ I18N.fa.upd_t='نسخه‌ی جدید آماده است';I18N.fa.upd_m='لطفا
 
 /* ------------------------------------------------------------------ forced update (per platform) */
 const REPO='elyasninjago03366-dev/ip-radar';
-let updUrl='';
+let updUrl='',updClosed=false;
 async function checkUpdate(){
-  if(!NATIVE||$('upd')&&!$('upd').hidden)return;
+  if(!NATIVE||updClosed||!$('upd').hidden)return;
   try{
     const v=String(Native.version());const m=/^(android|desktop):[\d.]*?(\d+)$/.exec(v);if(!m)return;
     const desk=m[1]==='desktop',cur=+m[2];
@@ -769,7 +769,10 @@ async function checkUpdate(){
   }catch(e){}
 }
 $('updgo').onclick=()=>{if(!updUrl)return;if(window.__DESKTOP){const a=document.createElement('a');a.href=updUrl;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}else location.href=updUrl};
-addEventListener('keydown',e=>{if(!$('upd').hidden){e.preventDefault();e.stopPropagation()}},true);
+const closeUpd=()=>{updClosed=true;$('upd').hidden=true};
+$('updx').onclick=closeUpd;
+$('upd').addEventListener('click',e=>{if(e.target===$('upd'))closeUpd()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('upd').hidden)closeUpd()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
 $('lang').onclick=()=>{lang=lang==='fa'?'en':'fa';store.set('lang',lang);applyLang(true)};
 
