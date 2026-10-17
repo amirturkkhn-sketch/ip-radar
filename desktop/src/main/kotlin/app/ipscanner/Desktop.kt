@@ -221,6 +221,7 @@ fun main(args: Array<String>) {
     val port = server.address.port
     val allowedHosts = setOf("127.0.0.1:$port", "localhost:$port")
     val appVer = Json::class.java.`package`?.implementationVersion ?: "1.0.1"
+    val bundled = Json::class.java.getResourceAsStream("/bundled.js")?.readBytes() ?: "window.BUNDLED={};".toByteArray()
     val index = (Json::class.java.getResourceAsStream("/index.html")?.readBytes() ?: ByteArray(0))
         .toString(Charsets.UTF_8)
         .replaceFirst("<script>", "<script>window.__APPVER=\"" + appVer + "\";")
@@ -236,6 +237,8 @@ fun main(args: Array<String>) {
             when {
                 ex.requestMethod == "GET" && (path == "/" || path == "/index.html") ->
                     send(ex, 200, "text/html; charset=utf-8", index)
+                ex.requestMethod == "GET" && path == "/bundled.js" ->
+                    send(ex, 200, "application/javascript; charset=utf-8", bundled)
                 path == "/api/ping" -> {
                     if (ex.requestHeaders.getFirst("X-IPR") != "1") { send(ex, 403, "text/plain", "forbidden".toByteArray()); return@createContext }
                     lastBeat = System.currentTimeMillis(); everBeat = true; byeAt = 0L

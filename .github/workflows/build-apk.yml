@@ -21,6 +21,8 @@ jobs:
         with:
           packages: 'platforms;android-34 build-tools;34.0.0'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Bake the lists into the app (hard-coded, still refreshed online)
+        run: python3 scripts/fetch-lists.py
       - name: Use private signing key (optional, from repo secrets)
         env:
           KS_B64: ${{ secrets.KEYSTORE_BASE64 }}

@@ -209,7 +209,11 @@ object Engine {
         if (!Regex("^[A-Za-z0-9.:_-]+$").matches(host)) return Probe(false, 0.0, 0.0, 100, null, null, "bad-host")
         val wait = maxOf(1, (timeoutMs + 999) / 1000)
         if (System.getProperty("os.name", "").lowercase().contains("win")) return icmpWindows(host, n, timeoutMs)
-        val cmds = listOf(
+        val v6 = host.contains(':')
+        val cmds = (if (v6) listOf(
+            listOf("/system/bin/ping6", "-c", n.toString(), "-W", wait.toString(), host),
+            listOf("ping6", "-c", n.toString(), "-W", wait.toString(), host)
+        ) else emptyList()) + listOf(
             listOf("/system/bin/ping", "-c", n.toString(), "-W", wait.toString(), host),
             listOf("ping", "-c", n.toString(), "-W", wait.toString(), host),
             listOf("/system/bin/ping", "-c", n.toString(), "-w", (n * wait).toString(), host)
@@ -250,7 +254,7 @@ object Engine {
     private fun icmpWindows(host: String, n: Int, timeoutMs: Int): Probe {
         var p: Process? = null
         try {
-            val proc: Process = ProcessBuilder("ping", "-n", n.toString(), "-w", timeoutMs.toString(), host)
+            val proc: Process = ProcessBuilder(listOf("ping") + (if (host.contains(':')) listOf("-6") else emptyList()) + listOf("-n", n.toString(), "-w", timeoutMs.toString(), host))
                 .redirectErrorStream(true).start()
             p = proc
             val killer = Thread {
