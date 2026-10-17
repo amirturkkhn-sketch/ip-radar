@@ -241,6 +241,20 @@ class Bridge(private val act: MainActivity) {
                 act.copy(a.getString("text"))
                 JSONObject().put("ok", true).toString()
             }
+            "paste" -> {
+                var txt = ""
+                val l = java.util.concurrent.CountDownLatch(1)
+                act.runOnUiThread {
+                    try {
+                        val cm = act.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        txt = cm.primaryClip?.getItemAt(0)?.coerceToText(act)?.toString() ?: ""
+                    } catch (_: Exception) {
+                    }
+                    l.countDown()
+                }
+                l.await(2, java.util.concurrent.TimeUnit.SECONDS)
+                JSONObject().put("ok", true).put("text", txt).toString()
+            }
             "save" -> {
                 act.save(a.optString("name", "list.txt"), a.getString("text"))
                 JSONObject().put("ok", true).toString()

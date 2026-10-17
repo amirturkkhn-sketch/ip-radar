@@ -140,9 +140,9 @@ input[type=checkbox]{accent-color:#c6f45b}
     <section class="c" style="--d:0">
       <h2><b>1</b><span data-i="s1"></span></h2>
       <div class="seg" id="seg">
-        <button data-src="zeus" data-i="src_cf"></button><button data-src="range" data-i="src_range"></button><button data-src="manual" data-i="src_manual"></button><button data-src="api" data-i="src_api"></button><button data-src="doh" data-i="src_doh"></button><button data-src="edt_socks" data-i="src_edt_socks"></button><button data-src="proxifly" data-i="src_proxifly"></button><button data-src="edt_http" data-i="src_http"></button><button data-src="edt_https" data-i="src_https"></button>
+        <button data-src="zeus" data-i="src_cf"></button><button data-src="range" data-i="src_range"></button><button data-src="manual" data-i="src_manual"></button><button data-src="proxy" data-i="src_proxy"></button><button data-src="api" data-i="src_api"></button><button data-src="doh" data-i="src_doh"></button><button data-src="edt_socks" data-i="src_edt_socks"></button><button data-src="proxifly" data-i="src_proxifly"></button><button data-src="edt_http" data-i="src_http"></button><button data-src="edt_https" data-i="src_https"></button>
       </div>
-      <div id="mbox" hidden><label data-i="man_lbl"></label><textarea id="mtxt" dir="ltr" spellcheck="false" placeholder="104.16.85.20&#10;45.67.89.10:1080&#10;socks5://user:pass@5.6.7.8:1080&#10;1.2.3.4:8080#DE"></textarea><label data-i="man_type"></label><select id="mkind"></select><label class="ck" style="margin-top:10px"><input id="madd" type="checkbox"><span data-i="man_add"></span></label><div class="r" style="margin-top:8px"><button id="mimp" class="p" data-i="man_import"></button><button id="mfile" data-i="man_file"></button></div></div>
+      <div id="mbox" hidden><label data-i="man_lbl"></label><textarea id="mtxt" dir="ltr" spellcheck="false" placeholder="104.16.85.20&#10;45.67.89.10:1080&#10;socks5://user:pass@5.6.7.8:1080&#10;1.2.3.4:8080#DE"></textarea><label data-i="man_type"></label><select id="mkind"></select><label class="ck" style="margin-top:10px"><input id="madd" type="checkbox"><span data-i="man_add"></span></label><div class="r" style="margin-top:8px"><button id="mimp" class="p" data-i="man_import"></button><button id="mfile" data-i="man_file"></button><button id="mpaste" data-i="man_paste"></button></div></div>
       <div id="rbox" hidden><label data-i="range_lbl"></label><textarea id="rtxt" dir="ltr" spellcheck="false" placeholder="104.16.0.0/20&#10;172.64.0.1-172.64.0.200&#10;162.159.135.42"></textarea><div class="r" style="margin-top:8px"><button id="rcf" data-i="range_cf"></button><button id="rcf6" data-i="range_cf6"></button><button id="rapply" class="p" data-i="range_apply"></button></div></div>
       <div id="abox" hidden><label data-i="api_lbl"></label><textarea id="aurl" dir="ltr" spellcheck="false" style="min-height:84px" placeholder="https://example.com/api/ips&#10;https://example.org/list.json&#10;https://example.net/proxies.txt"></textarea><label data-i="list_type"></label><select id="akind"></select><div class="r" style="margin-top:8px"><button id="ago" class="p" data-i="api_fetch"></button></div><div class="m" data-i="api_hint"></div></div>
       <div id="dbox" hidden><label data-i="dsrv_lbl"></label><textarea id="dsrv" dir="ltr" spellcheck="false" style="min-height:64px" placeholder="https://dns.example/dns-query"></textarea><div class="r" style="margin-top:8px"><span class="m" style="margin:0" data-i="dsrv_n"></span><input id="dn" type="number" min="1" max="60" value="10" inputmode="numeric" style="width:84px"><button id="dtest" class="p" data-i="dsrv_go"></button></div><div class="m" data-i="dsrv_hint"></div><hr style="border:0;border-top:1px solid var(--ln);margin:14px 0"><label data-i="doh_lbl"></label><textarea id="dtxt" dir="ltr" spellcheck="false" placeholder="example.com&#10;sub.example.org"></textarea><label data-i="doh_prov"></label><select id="dprov"><option value="cf">Cloudflare</option><option value="google">Google</option><option value="custom">Custom</option></select><input id="durl" type="url" dir="ltr" placeholder="https://dns.example/dns-query" hidden><div class="r" style="margin-top:8px"><label class="ck"><input id="d4" type="checkbox" checked><span>IPv4 (A)</span></label><label class="ck"><input id="d6" type="checkbox" checked><span>IPv6 (AAAA)</span></label></div><div class="r" style="margin-top:8px"><button id="dgo" class="p" data-i="doh_go"></button></div></div>
@@ -306,7 +306,7 @@ const SRC={
  edt_https:{kind:'https',urls:[RAW+'EDT-Pages/Proxy-List/main/data/https.txt',CDN+'EDT-Pages/Proxy-List@main/data/https.txt']},
  custom:{kind:'ip',urls:[]}
 };
-const METHODS={ip:['real','icmp','tcp'],socks:['socks5','tcp'],http:['http','tcp'],https:['connect','tcp']};
+const METHODS={mixed:['mixed','tcp'],ip:['real','icmp','tcp'],socks:['socks5','tcp'],http:['http','tcp'],https:['connect','tcp']};
 /* Small built-in sample of Cloudflare IPs, used when the online list cannot be downloaded. */
 const SAMPLE_IPS='104.16.85.20 104.16.86.20 104.16.87.20 104.17.150.8 104.17.151.8 162.159.135.42 172.67.180.12 104.21.60.10 104.26.10.15 104.16.132.229 104.16.133.229 104.17.140.11 104.18.20.40 162.159.140.66 172.67.70.88 104.16.100.15 104.16.101.15 104.17.80.30 104.18.15.22 162.159.150.10 172.67.130.50 104.16.200.5 104.17.65.12 104.18.35.45 162.159.160.80 104.16.110.12 104.17.95.40 162.159.170.20 104.16.70.80 104.17.110.25 104.16.45.10 104.17.50.20 104.16.18.90 104.18.110.50 172.67.210.40 104.16.25.10 104.17.30.15 104.20.10.5 104.24.100.1 104.22.5.30'.split(' ').join('\n');
 
@@ -343,6 +343,7 @@ function parseList(text,kind){
     if(h>0){const m=line.slice(h+1).trim().match(/^[A-Za-z]{2}(?![A-Za-z])/);if(m)cc=m[0].toUpperCase();line=line.slice(0,h).trim()}
     else if(line.includes(',')){const p=line.split(',');line=p[0].trim();const m=(p[p.length-1]||'').trim().match(/^[A-Za-z]{2}$/);if(m)cc=m[0].toUpperCase()}
     else if(/\s/.test(line)){const p=line.split(/\s+/);line=p[0];const m=(p[1]||'').match(/^[A-Za-z]{2}$/);if(m)cc=m[0].toUpperCase()}
+    const sm=line.match(/^([a-z][a-z0-9+.-]*):\/\//i);let proto=sm?sm[1].toLowerCase():'';if(proto==='socks'||proto==='socks5h')proto='socks5';if(proto==='socks4a')proto='socks4';
     line=line.replace(/^[a-z][a-z0-9+.-]*:\/\//i,'');
     let it=null;
     if(kind==='ip'){
@@ -358,7 +359,7 @@ function parseList(text,kind){
       if(m6){host=m6[1].toLowerCase();port=+m6[2]}
       else{const p=line.split(':');if(p.length<2)continue;host=p[0];port=+p[1];if(!/^[\w.-]+$/.test(host))continue;if(p.length>=4&&!user){user=p[2];pass=p.slice(3).join(':')}}
       if(!(port>0&&port<65536))continue;
-      it={host,port,addr:hp(host,port),user,pass,cc};
+      it={host,port,addr:hp(host,port),user,pass,cc};if(kind==='mixed')it.proto=proto;
     }
     const key=it.addr+'|'+it.user;
     if(seen.has(key))continue;seen.add(key);
@@ -452,7 +453,7 @@ function importManual(text,fromFile){
 }
 function openManual(){
   ++S.loadTok;S.src='manual';store.set('src','manual');
-  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.src==='manual'));
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.src===($('mkind').value==='mixed'?'proxy':'manual')));
   showBox('m');
   S.kind=$('mkind').value||'ip';
   if($('mtxt').value.trim())importManual($('mtxt').value);
@@ -526,7 +527,7 @@ function buildMethods(){
   $('sni').closest('details').querySelector('label').hidden=S.kind!=='ip';
   $('sni').hidden=S.kind!=='ip';
   $('cfg').hidden=$('imp').parentElement.hidden=S.kind!=='ip';
-  $('https').closest('label').hidden=S.kind!=='socks';
+  $('https').closest('label').hidden=S.kind!=='socks'&&S.kind!=='mixed';
   updateNote();
 }
 function updateNote(){const m=$('method').value;$('note').textContent=m?t('n_'+m):''}
@@ -539,9 +540,9 @@ function buildFmt(){
     $('fmthint').textContent=t('fmt_hint_ip');
     sel.value=[...sel.options].some(x=>x.value===prev)?prev:(cfgs.length?'0':'ip');
   }else{
-    add('plain',t('fmt_plain'));add('url',t('fmt_url',{s:scheme()}));if(S.kind==='socks')add('tg',t('fmt_tg'));
+    add('plain',t('fmt_plain'));add('url',t('fmt_url',{s:S.kind==='mixed'?'proto':scheme()}));if(S.kind==='socks'||S.kind==='mixed')add('tg',t('fmt_tg'));
     $('fmthint').textContent=t('fmt_hint_px');
-    sel.value=[...sel.options].some(x=>x.value===prev)?prev:'plain';
+    sel.value=[...sel.options].some(x=>x.value===prev)?prev:(S.kind==='mixed'?'url':'plain');
   }
 }
 const scheme=()=>S.kind==='socks'?'socks5':'http';
@@ -586,9 +587,20 @@ async function browserProbe(it,o){
   if(!t.length)return{ok:false};
   return{ok:true,ping:Math.min(...t),delay:t.reduce((a,b)=>a+b)/t.length,loss:Math.round((o.samples-t.length)/o.samples*100)};
 }
+async function probeMixed(it,o,b){
+  const tries=it.proto?[it.proto]:['socks5','http'];let last={ok:false};
+  for(const p of tries){
+    if(p==='socks4')return{ok:false,err:'socks4'};
+    const a={...b,port:it.port,user:it.user,pass:it.pass};
+    const r=p.startsWith('socks')?await nat('socks5',{...a,https:o.https}):await nat('http',{...a,tunnel:p==='https'});
+    if(r&&r.ok){r.proto=p;return r}last=r||last;
+  }
+  return last;
+}
 function probe(it,o){
   const b={timeout:o.timeout,samples:o.samples,host:it.host};
   switch(o.method){
+    case'mixed':return probeMixed(it,o,b);
     case'real':return nat('real',{...b,sni:o.sni});
     case'icmp':return nat('icmp',b);
     case'tcp':return nat('tcp',{...b,port:it.port});
@@ -616,7 +628,7 @@ async function startScan(){
       let r;try{r=await probe(it,o)}catch(e){r={ok:false}}
       if(S.token!==tok)return;
       S.done++;
-      if(r&&r.ok)S.res.push({...it,ping:r.ping,delay:r.delay,loss:r.loss||0,colo:r.colo||null,cc:it.cc||null});
+      if(r&&r.ok)S.res.push({...it,proto:r.proto||it.proto,ping:r.ping,delay:r.delay,loss:r.loss||0,colo:r.colo||null,cc:it.cc||null});
       else if(r&&r.err)S.errs[r.err]=(S.errs[r.err]||0)+1;
       if(!(r&&r.ok))S.failed++;
       schedule();
@@ -723,8 +735,9 @@ function fmtAddr(r){
   if(S.kind==='ip'){if(v==='ip'||!cfgs[+v])return r.host;return swap(cfgs[+v],r.host)||r.host}
   const hostp=hp(r.host,r.port);
   if(v==='plain')return hostp;
-  if(v==='tg'&&S.kind==='socks')return 'https://t.me/socks?server='+encodeURIComponent(r.host)+'&port='+r.port+(r.user?'&user='+encodeURIComponent(r.user)+'&pass='+encodeURIComponent(r.pass):'');
-  return scheme()+'://'+(r.user?r.user+':'+r.pass+'@':'')+hostp;
+  const px=S.kind==='mixed'?(r.proto||'socks5'):scheme();
+  if(v==='tg'&&px.startsWith('socks'))return 'https://t.me/socks?server='+encodeURIComponent(r.host)+'&port='+r.port+(r.user?'&user='+encodeURIComponent(r.user)+'&pass='+encodeURIComponent(r.pass):'');
+  return px+'://'+(r.user?r.user+':'+r.pass+'@':'')+hostp;
 }
 const joinOut=a=>S.fmtMode==='comma'?a.join(', '):a.join('\n');
 let _tt=0;
@@ -755,9 +768,15 @@ function ripple(e){
   b.appendChild(s);setTimeout(()=>s.remove(),600);
 }
 document.addEventListener('pointerdown',ripple);
-document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{const k=b.dataset.src;saveTab();loadTab(k);k==='range'?openRange():k==='manual'?openManual():k==='api'?openApi():k==='doh'?openDoh():loadSource(k)});
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{const k=b.dataset.src;saveTab();loadTab(k);k==='range'?openRange():k==='manual'?openManual():k==='proxy'?(()=>{$('mkind').value='mixed';openManual()})():k==='api'?openApi():k==='doh'?openDoh():loadSource(k)});
 $('mimp').onclick=()=>importManual($('mtxt').value);
 $('mkind').onchange=()=>{store.set('mkind',$('mkind').value);if(S.src==='manual'&&$('mtxt').value.trim())importManual($('mtxt').value)};
+$('mpaste').onclick=async()=>{
+  let x='';
+  try{if(NATIVE&&!window.__DESKTOP){const q=await nat('paste',{});x=q.text||''}else x=await navigator.clipboard.readText()}catch(e){}
+  if(!x.trim()){toast(t('man_nopaste'));return}
+  $('mtxt').value=($('madd').checked&&$('mtxt').value.trim()?$('mtxt').value.trim()+'\n':'')+x;importManual($('mtxt').value);
+};
 $('mfile').onclick=()=>{window.__mfile=1;$('fileList').click()};
 $('rapply').onclick=applyRanges;$('rcf').onclick=()=>{$('rtxt').value=CF_RANGES;applyRanges()};$('rcf6').onclick=()=>{$('rtxt').value=CF_RANGES6;applyRanges()};
 $('reload').onclick=()=>{if(S.src==='custom'){toast(t('t_nothing'));return}loadSource(S.src)};
@@ -902,6 +921,8 @@ async function runDohTest(){
 }
 $('dtest').onclick=runDohTest;
 try{$('dsrv').value=store.get('dsrv','');$('dn').value=store.get('dn','10')}catch(e){}
+I18N.en.kind_mixed='Proxy (all types together)';I18N.fa.kind_mixed='پروکسی (همه نوع با هم)';I18N.en.src_proxy='Proxy';I18N.fa.src_proxy='پروکسی';I18N.en.man_paste='Paste from clipboard';I18N.fa.man_paste='چسباندن از کلیپ‌بورد';I18N.en.man_nopaste='Clipboard is empty or not allowed — paste into the box instead';I18N.fa.man_nopaste='کلیپ‌بورد خالی است یا اجازه داده نشد — داخل کادر بچسبانید';
+I18N.en.m_mixed='Real delay (each proxy with its own prefix)';I18N.fa.m_mixed='تأخیر واقعی (هر پروکسی با پیشوند خودش)';I18N.en.n_mixed='socks5:// http:// https:// are all tested together, each one with its own prefix; without a prefix SOCKS5 then HTTP is tried. Copy keeps the prefix. SOCKS4 is not supported.';I18N.fa.n_mixed='socks5:// ،http:// و https:// همه با هم تست می‌شوند و هرکدام با پیشوند خودش؛ بدون پیشوند اول SOCKS5 بعد HTTP امتحان می‌شود. کپی با همان پیشوند است. SOCKS4 پشتیبانی نمی‌شود.';
 I18N.en.all_isp='All operators / ISPs';I18N.fa.all_isp='همه اپراتورها';
 I18N.en.dsrv_lbl='Your own DoH servers (optional, one https:// link per line)';I18N.en.dsrv_n='How many built-in servers';I18N.en.dsrv_go='Add & test DoH servers';I18N.en.dsrv_hint='Adds that many known public DoH servers (Iran-friendly ones first), plus yours, and measures the real response time of each. Copy the working ones.';
 I18N.fa.dsrv_lbl='سرورهای DoH خودتان (اختیاری، هر خط یک لینک https://)';I18N.fa.dsrv_n='چند سرور آماده';I18N.fa.dsrv_go='افزودن و تست سرورهای DoH';I18N.fa.dsrv_hint='به تعداد دلخواه سرور DoH عمومی (اول سرورهای مناسب ایران) به‌علاوه‌ی سرورهای شما اضافه می‌شود و زمان پاسخ واقعی هرکدام اندازه‌گیری می‌شود. سالم‌ها را کپی کنید.';
@@ -961,7 +982,7 @@ function applyLang(anim){
   document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
   document.querySelectorAll('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
   $('lang').textContent=lang==='fa'?'English':'فارسی';
-  const kinds=[['ip','kind_ip'],['socks','kind_socks'],['http','kind_http'],['https','kind_https']],kv=$('kind').value||'ip';
+  const kinds=[['ip','kind_ip'],['mixed','kind_mixed'],['socks','kind_socks'],['http','kind_http'],['https','kind_https']],kv=$('kind').value||'ip';
   $('kind').innerHTML='';for(const [v,k] of kinds){const o=document.createElement('option');o.value=v;o.textContent=t(k);$('kind').appendChild(o)}$('kind').value=kv;const av=$('akind').value||store.get('akind','ip');$('akind').innerHTML='';for(const [v,k] of kinds){const o=document.createElement('option');o.value=v;o.textContent=t(k);$('akind').appendChild(o)}$('akind').value=av;
   const mv=$('mkind').value||store.get('mkind','ip');$('mkind').innerHTML='';for(const [v,k] of kinds){const o=document.createElement('option');o.value=v;o.textContent=t(k);$('mkind').appendChild(o)}$('mkind').value=mv;
   buildSelects();buildCountry();buildMethods();buildFmt();buildResultCC();
