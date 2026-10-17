@@ -144,7 +144,7 @@ input[type=checkbox]{accent-color:#c6f45b}
       </div>
       <div id="mbox" hidden><label data-i="man_lbl"></label><textarea id="mtxt" dir="ltr" spellcheck="false" placeholder="104.16.85.20&#10;45.67.89.10:1080&#10;socks5://user:pass@5.6.7.8:1080&#10;1.2.3.4:8080#DE"></textarea><label data-i="man_type"></label><select id="mkind"></select><label class="ck" style="margin-top:10px"><input id="madd" type="checkbox"><span data-i="man_add"></span></label><div class="r" style="margin-top:8px"><button id="mimp" class="p" data-i="man_import"></button><button id="mfile" data-i="man_file"></button></div></div>
       <div id="rbox" hidden><label data-i="range_lbl"></label><textarea id="rtxt" dir="ltr" spellcheck="false" placeholder="104.16.0.0/20&#10;172.64.0.1-172.64.0.200&#10;162.159.135.42"></textarea><div class="r" style="margin-top:8px"><button id="rcf" data-i="range_cf"></button><button id="rcf6" data-i="range_cf6"></button><button id="rapply" class="p" data-i="range_apply"></button></div></div>
-      <div id="abox" hidden><label data-i="api_lbl"></label><input id="aurl" type="url" dir="ltr" placeholder="https://example.com/api/ips"><label data-i="list_type"></label><select id="akind"></select><div class="r" style="margin-top:8px"><button id="ago" class="p" data-i="api_fetch"></button></div><div class="m" data-i="api_hint"></div></div>
+      <div id="abox" hidden><label data-i="api_lbl"></label><textarea id="aurl" dir="ltr" spellcheck="false" style="min-height:84px" placeholder="https://example.com/api/ips&#10;https://example.org/list.json&#10;https://example.net/proxies.txt"></textarea><label data-i="list_type"></label><select id="akind"></select><div class="r" style="margin-top:8px"><button id="ago" class="p" data-i="api_fetch"></button></div><div class="m" data-i="api_hint"></div></div>
       <div id="dbox" hidden><label data-i="doh_lbl"></label><textarea id="dtxt" dir="ltr" spellcheck="false" placeholder="example.com&#10;sub.example.org"></textarea><label data-i="doh_prov"></label><select id="dprov"><option value="cf">Cloudflare</option><option value="google">Google</option><option value="custom">Custom</option></select><input id="durl" type="url" dir="ltr" placeholder="https://dns.example/dns-query" hidden><div class="r" style="margin-top:8px"><label class="ck"><input id="d4" type="checkbox" checked><span>IPv4 (A)</span></label><label class="ck"><input id="d6" type="checkbox" checked><span>IPv6 (AAAA)</span></label></div><div class="r" style="margin-top:8px"><button id="dgo" class="p" data-i="doh_go"></button></div></div>
       <div id="rrow" class="r" style="margin-top:8px"><button id="reload" data-i="reload"></button><span id="lmsg" class="m" style="margin:0"></span></div>
       <div id="crow"><label><span data-i="country"></span></label><select id="country"></select></div>
@@ -799,15 +799,16 @@ function openApi(){
   if(!S.items.length||S.statusKey!=='st_api'){setItems([],'st_api');S.src='api';$('lmsg').textContent=t('empty_list')}
 }
 async function runApi(){
-  const url=$('aurl').value.trim();store.set('aurl',url);store.set('akind',$('akind').value);
-  if(!/^https?:\/\//i.test(url)){toast(t('api_bad'));return}
+  const raw=$('aurl').value;store.set('aurl',raw);store.set('akind',$('akind').value);
+  const urls=[...new Set(raw.split(/[\s,;]+/).filter(u=>/^https?:\/\//i.test(u)))].slice(0,10);
+  if(!urls.length){toast(t('api_bad'));return}
   const kind=$('akind').value;++S.loadTok;$('lmsg').textContent=t('loading');
-  try{
-    const items=parseList(extractList(await getText(url),kind),kind);
-    S.src='api';S.kind=kind;
-    if(!items.length){setItems([],'st_api');S.src='api';$('lmsg').textContent=t('empty_list');return}
-    setItems(items,'st_api');
-  }catch(e){$('lmsg').textContent=t('load_fail')}
+  let ok=0,txt=[];
+  await Promise.all(urls.map(async u=>{try{txt.push(extractList(await getText(u),kind));ok++}catch(e){}}));
+  const items=parseList(txt.join('\n'),kind);
+  S.src='api';S.kind=kind;
+  if(!items.length){setItems([],'st_api');S.src='api';$('lmsg').textContent=t(ok?'empty_list':'load_fail');return}
+  setItems(items,'st_api');
 }
 function dohUrl(d,type){
   const pv=$('dprov').value;
@@ -860,8 +861,8 @@ function loadTab(src){
 addEventListener('pagehide',saveTab);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveTab()});
 
-I18N.en.src_api="API";I18N.en.src_doh="DoH";I18N.en.api_lbl="API / site address that returns IPs (JSON or text)";I18N.en.api_fetch="Fetch IPs";I18N.en.api_hint="Any IPs (or ip:port) found in the response are extracted automatically. IPv6 works too.";I18N.en.api_bad="Enter a full https:// address";I18N.en.st_api="from API";I18N.en.doh_lbl="Domains to resolve (one per line)";I18N.en.doh_prov="DoH server";I18N.en.doh_go="Resolve & load";I18N.en.doh_fail="DoH lookup failed (server unreachable?)";I18N.en.st_doh="from DoH";I18N.en.st_builtin="built-in list";I18N.en.fmt_tg="Telegram link (t.me/socks)";I18N.en.range_cf6="Cloudflare IPv6";
-I18N.fa.src_api="API";I18N.fa.src_doh="DoH";I18N.fa.api_lbl="آدرس API / سایتی که آی‌پی برمی‌گرداند (JSON یا متن)";I18N.fa.api_fetch="دریافت آی‌پی‌ها";I18N.fa.api_hint="هر آی‌پی (یا ip:port) داخل پاسخ خودکار استخراج می‌شود. IPv6 هم پشتیبانی می‌شود.";I18N.fa.api_bad="آدرس کامل https:// را وارد کنید";I18N.fa.st_api="از API";I18N.fa.doh_lbl="دامنه‌ها برای حل‌کردن (هر خط یکی)";I18N.fa.doh_prov="سرور DoH";I18N.fa.doh_go="حل‌کردن و بارگذاری";I18N.fa.doh_fail="جستجوی DoH ناموفق بود (سرور در دسترس نیست؟)";I18N.fa.st_doh="از DoH";I18N.fa.st_builtin="لیست داخلی";I18N.fa.fmt_tg="لینک تلگرام (t.me/socks)";I18N.fa.range_cf6="آی‌پی۶ کلادفلر";
+I18N.en.src_api="API";I18N.en.src_doh="DoH";I18N.en.api_lbl="API / site addresses that return IPs (JSON or text) — one link per line, up to 10";I18N.en.api_fetch="Fetch IPs";I18N.en.api_hint="Any IPs (or ip:port) found in the response are extracted automatically. IPv6 works too.";I18N.en.api_bad="Enter a full https:// address";I18N.en.st_api="from API";I18N.en.doh_lbl="Domains to resolve (one per line)";I18N.en.doh_prov="DoH server";I18N.en.doh_go="Resolve & load";I18N.en.doh_fail="DoH lookup failed (server unreachable?)";I18N.en.st_doh="from DoH";I18N.en.st_builtin="built-in list";I18N.en.fmt_tg="Telegram link (t.me/socks)";I18N.en.range_cf6="Cloudflare IPv6";
+I18N.fa.src_api="API";I18N.fa.src_doh="DoH";I18N.fa.api_lbl="آدرس API یا سایت‌هایی که آی‌پی برمی‌گردانند (JSON یا متن) — هر خط یک لینک، تا ۱۰ لینک";I18N.fa.api_fetch="دریافت آی‌پی‌ها";I18N.fa.api_hint="هر آی‌پی (یا ip:port) داخل پاسخ خودکار استخراج می‌شود. IPv6 هم پشتیبانی می‌شود.";I18N.fa.api_bad="آدرس کامل https:// را وارد کنید";I18N.fa.st_api="از API";I18N.fa.doh_lbl="دامنه‌ها برای حل‌کردن (هر خط یکی)";I18N.fa.doh_prov="سرور DoH";I18N.fa.doh_go="حل‌کردن و بارگذاری";I18N.fa.doh_fail="جستجوی DoH ناموفق بود (سرور در دسترس نیست؟)";I18N.fa.st_doh="از DoH";I18N.fa.st_builtin="لیست داخلی";I18N.fa.fmt_tg="لینک تلگرام (t.me/socks)";I18N.fa.range_cf6="آی‌پی۶ کلادفلر";
 I18N.en.upd_t='New version available';I18N.en.upd_m='Please install the new version for a better experience.';I18N.en.upd_b='Update now';
 I18N.fa.upd_t='نسخه‌ی جدید آماده است';I18N.fa.upd_m='لطفاً برای تجربه‌ی بهتر، نسخه‌ی جدید را نصب کنید.';I18N.fa.upd_b='به‌روزرسانی';
 
