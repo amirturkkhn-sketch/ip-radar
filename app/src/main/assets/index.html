@@ -197,7 +197,7 @@ input[type=checkbox]{accent-color:#c6f45b}
 
   <div class="hd"><h2 data-i="results"></h2></div>
   <div class="tb">
-    <select id="rcc"></select>
+    <select id="rcc"></select><select id="risp" hidden></select>
     <div class="seg" id="fmtseg"><button data-f="lines" data-i="fmt_lines"></button><button data-f="comma" data-i="fmt_comma"></button></div>
     <select id="topn" style="width:auto"></select>
     <button id="ctop" disabled></button>
@@ -460,7 +460,7 @@ function openManual(){
 }
 function resetResults(){
   if(S.scanning)stopScan();
-  S.res=[];S.done=0;S.total=0;S.failed=0;S.seen=new Set();S.filterCC='*';S.geoBusy=false;buildResultCC();
+  S.res=[];S.done=0;S.total=0;S.failed=0;S.seen=new Set();S.filterCC='*';S.filterISP='*';S.geoBusy=false;buildResultCC();
 }
 function setItems(items,statusKey){
   resetResults();
@@ -605,7 +605,7 @@ async function startScan(){
   const o={method:$('method').value,timeout:+$('to').value,samples:+$('samples').value,sni:$('sni').value.trim()||'www.cloudflare.com',https:$('https').checked};
   if(!o.method)return;
   const conc=+$('conc').value,tok=++S.token;
-  S.scanning=true;S.res=[];S.failed=0;S.done=0;S.total=list.length;S.seen=new Set();S.filterCC='*';S.geoBusy=false;S.lastMethod=o.method;S.errs={};$('why').hidden=true;
+  S.scanning=true;S.res=[];S.failed=0;S.done=0;S.total=list.length;S.seen=new Set();S.filterCC='*';S.filterISP='*';S.geoBusy=false;S.lastMethod=o.method;S.errs={};$('why').hidden=true;
   $('scan').classList.add('scanning');$('go').disabled=true;$('stop').disabled=false;
   if(NATIVE){try{Native.keepOn(true)}catch(e){}}
   buildResultCC();render();
@@ -657,18 +657,18 @@ async function resolveGeo(){
     else{
       let i=0;
       const w=async()=>{while(i<top.length){const r=top[i++];try{const c=new AbortController(),id=setTimeout(()=>c.abort(),4000);
-        const j=await (await fetch('https://ipwho.is/'+r.host+'?fields=success,country_code',{signal:c.signal})).json();clearTimeout(id);if(j.success)map[r.host]=j.country_code}catch(e){}}};
+        const j=await (await fetch('https://ipwho.is/'+r.host+'?fields=success,country_code,connection',{signal:c.signal})).json();clearTimeout(id);if(j.success)map[r.host]=j.country_code+'|'+((j.connection&&j.connection.isp)||'')}catch(e){}}};
       await Promise.all(Array.from({length:6},w));
     }
   }catch(e){}
   if(S.res!==arr)return;
-  for(const r of top)if(map[r.host])r.cc=String(map[r.host]).toUpperCase();
+  for(const r of top)if(map[r.host]){const q=String(map[r.host]).split('|');r.cc=q[0].toUpperCase();r.isp=ispName(q[1]||'')}
   S.geoBusy=false;buildResultCC();render();
 }
 
 /* ---------------------------------------------------------------- results */
 const score=r=>r.loss*20+r.delay;
-function view(){let a=S.res.slice().sort((x,y)=>score(x)-score(y));if(S.filterCC!=='*')a=a.filter(r=>r.cc===S.filterCC);return a}
+function view(){let a=S.res.slice().sort((x,y)=>score(x)-score(y));if(S.filterCC!=='*')a=a.filter(r=>r.cc===S.filterCC);if(S.filterISP&&S.filterISP!=='*')a=a.filter(r=>r.isp===S.filterISP);return a}
 const ms=v=>Math.round(v)+' ms';
 const fast=()=>S.lastMethod==='real'||S.lastMethod==='icmp'||S.lastMethod==='browser'||(S.lastMethod==='tcp'&&S.kind==='ip');
 function cls(v){const g=fast()?150:600,m=fast()?400:1500;return v<g?'good':v<m?'mid':'bad'}
@@ -679,6 +679,19 @@ function buildResultCC(){
   const o=document.createElement('option');o.value='*';o.textContent='🌐 '+t('all_found');sel.appendChild(o);
   for(const cc of Object.keys(count).sort((a,b)=>count[b]-count[a])){const e=document.createElement('option');e.value=cc;e.textContent=flag(cc)+' '+cname(cc)+' — '+count[cc];sel.appendChild(e)}
   sel.value=count[prev]?prev:'*';S.filterCC=sel.value;
+  const si=$('risp'),pi=S.filterISP||'*',ic={};
+  for(const r of S.res)if(r.isp)ic[r.isp]=(ic[r.isp]||0)+1;
+  si.innerHTML='';const o2=document.createElement('option');o2.value='*';o2.textContent='📡 '+t('all_isp');si.appendChild(o2);
+  for(const k of Object.keys(ic).sort((a,b)=>ic[b]-ic[a])){const e=document.createElement('option');e.value=k;e.textContent=k+' — '+ic[k];si.appendChild(e)}
+  si.value=ic[pi]?pi:'*';S.filterISP=si.value;si.hidden=!Object.keys(ic).length;
+}
+function ispName(x){
+  if(!x)return '';
+  if(/mobile communication company of iran|\bmci\b|hamrah/i.test(x))return 'همراه اول (MCI)';
+  if(/irancell|mtn/i.test(x))return 'ایرانسل (Irancell)';
+  if(/rightel/i.test(x))return 'رایتل (Rightel)';
+  if(/telecommunication company of iran|\btci\b/i.test(x))return 'مخابرات (TCI)';
+  return x.length>34?x.slice(0,34)+'…':x;
 }
 function bumpEl(el,txt){const s=String(txt);if(el.textContent!==s){el.textContent=s;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}}
 function render(){
@@ -770,6 +783,7 @@ $('cload').onclick=async()=>{
 };
 $('kind').onchange=()=>{};
 $('rcc').onchange=()=>{S.filterCC=$('rcc').value;render()};
+$('risp').onchange=()=>{S.filterISP=$('risp').value;render()};
 $('fmtseg').onclick=e=>{const f=e.target.dataset&&e.target.dataset.f;if(!f)return;S.fmtMode=f;store.set('fmtMode',f);document.querySelectorAll('#fmtseg button').forEach(b=>b.classList.toggle('on',b.dataset.f===f))};
 $('ctop').onclick=()=>{const a=view().slice(0,+$('topn').value||15);copyText(joinOut(a.map(fmtAddr)),a.length)};
 $('call').onclick=()=>{const a=view();copyText(joinOut(a.map(fmtAddr)),a.length)};
@@ -888,6 +902,7 @@ async function runDohTest(){
 }
 $('dtest').onclick=runDohTest;
 try{$('dsrv').value=store.get('dsrv','');$('dn').value=store.get('dn','10')}catch(e){}
+I18N.en.all_isp='All operators / ISPs';I18N.fa.all_isp='همه اپراتورها';
 I18N.en.dsrv_lbl='Your own DoH servers (optional, one https:// link per line)';I18N.en.dsrv_n='How many built-in servers';I18N.en.dsrv_go='Add & test DoH servers';I18N.en.dsrv_hint='Adds that many known public DoH servers (Iran-friendly ones first), plus yours, and measures the real response time of each. Copy the working ones.';
 I18N.fa.dsrv_lbl='سرورهای DoH خودتان (اختیاری، هر خط یک لینک https://)';I18N.fa.dsrv_n='چند سرور آماده';I18N.fa.dsrv_go='افزودن و تست سرورهای DoH';I18N.fa.dsrv_hint='به تعداد دلخواه سرور DoH عمومی (اول سرورهای مناسب ایران) به‌علاوه‌ی سرورهای شما اضافه می‌شود و زمان پاسخ واقعی هرکدام اندازه‌گیری می‌شود. سالم‌ها را کپی کنید.';
 $('ago').onclick=runApi;$('dgo').onclick=runDoh;

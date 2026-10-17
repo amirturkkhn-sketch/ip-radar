@@ -484,7 +484,7 @@ object Engine {
             val chunk = uniq.subList(i, minOf(i + 100, uniq.size))
             i += 100
             try {
-                val c = URL("http://ip-api.com/batch?fields=status,countryCode,query").openConnection() as HttpURLConnection
+                val c = URL("http://ip-api.com/batch?fields=status,countryCode,query,isp").openConnection() as HttpURLConnection
                 try {
                     c.requestMethod = "POST"
                     c.doOutput = true
@@ -499,7 +499,8 @@ object Engine {
                         val o = m.value
                         val q = Regex("\"query\"\\s*:\\s*\"([^\"]+)\"").find(o)?.groupValues?.get(1)
                         val cc = Regex("\"countryCode\"\\s*:\\s*\"([A-Za-z]{2})\"").find(o)?.groupValues?.get(1)
-                        if (q != null && cc != null) out[q] = cc.uppercase()
+                        val isp = Regex("\"isp\"\\s*:\\s*\"([^\"]*)\"").find(o)?.groupValues?.get(1)?.replace("|", " ") ?: ""
+                        if (q != null && cc != null) out[q] = cc.uppercase() + "|" + isp
                     }
                 } finally {
                     c.disconnect()
@@ -509,9 +510,10 @@ object Engine {
         }
         for (ip in uniq.filter { !out.containsKey(it) }.take(25)) {
             try {
-                val txt = fetchText("https://ipwho.is/$ip?fields=success,country_code", 5000, 20000)
+                val txt = fetchText("https://ipwho.is/$ip?fields=success,country_code,connection", 5000, 20000)
                 val cc = Regex("\"country_code\"\\s*:\\s*\"([A-Za-z]{2})\"").find(txt)?.groupValues?.get(1)
-                if (cc != null) out[ip] = cc.uppercase()
+                val isp = Regex("\"isp\"\\s*:\\s*\"([^\"]*)\"").find(txt)?.groupValues?.get(1)?.replace("|", " ") ?: ""
+                if (cc != null) out[ip] = cc.uppercase() + "|" + isp
             } catch (_: Exception) {
             }
         }
