@@ -145,7 +145,7 @@ input[type=checkbox]{accent-color:#c6f45b}
       <div id="mbox" hidden><label data-i="man_lbl"></label><textarea id="mtxt" dir="ltr" spellcheck="false" placeholder="104.16.85.20&#10;45.67.89.10:1080&#10;socks5://user:pass@5.6.7.8:1080&#10;1.2.3.4:8080#DE"></textarea><label data-i="man_type"></label><select id="mkind"></select><label class="ck" style="margin-top:10px"><input id="madd" type="checkbox"><span data-i="man_add"></span></label><div class="r" style="margin-top:8px"><button id="mimp" class="p" data-i="man_import"></button><button id="mfile" data-i="man_file"></button></div></div>
       <div id="rbox" hidden><label data-i="range_lbl"></label><textarea id="rtxt" dir="ltr" spellcheck="false" placeholder="104.16.0.0/20&#10;172.64.0.1-172.64.0.200&#10;162.159.135.42"></textarea><div class="r" style="margin-top:8px"><button id="rcf" data-i="range_cf"></button><button id="rcf6" data-i="range_cf6"></button><button id="rapply" class="p" data-i="range_apply"></button></div></div>
       <div id="abox" hidden><label data-i="api_lbl"></label><textarea id="aurl" dir="ltr" spellcheck="false" style="min-height:84px" placeholder="https://example.com/api/ips&#10;https://example.org/list.json&#10;https://example.net/proxies.txt"></textarea><label data-i="list_type"></label><select id="akind"></select><div class="r" style="margin-top:8px"><button id="ago" class="p" data-i="api_fetch"></button></div><div class="m" data-i="api_hint"></div></div>
-      <div id="dbox" hidden><label data-i="doh_lbl"></label><textarea id="dtxt" dir="ltr" spellcheck="false" placeholder="example.com&#10;sub.example.org"></textarea><label data-i="doh_prov"></label><select id="dprov"><option value="cf">Cloudflare</option><option value="google">Google</option><option value="custom">Custom</option></select><input id="durl" type="url" dir="ltr" placeholder="https://dns.example/dns-query" hidden><div class="r" style="margin-top:8px"><label class="ck"><input id="d4" type="checkbox" checked><span>IPv4 (A)</span></label><label class="ck"><input id="d6" type="checkbox" checked><span>IPv6 (AAAA)</span></label></div><div class="r" style="margin-top:8px"><button id="dgo" class="p" data-i="doh_go"></button></div></div>
+      <div id="dbox" hidden><label data-i="dsrv_lbl"></label><textarea id="dsrv" dir="ltr" spellcheck="false" style="min-height:64px" placeholder="https://dns.example/dns-query"></textarea><div class="r" style="margin-top:8px"><span class="m" style="margin:0" data-i="dsrv_n"></span><input id="dn" type="number" min="1" max="60" value="10" inputmode="numeric" style="width:84px"><button id="dtest" class="p" data-i="dsrv_go"></button></div><div class="m" data-i="dsrv_hint"></div><hr style="border:0;border-top:1px solid var(--ln);margin:14px 0"><label data-i="doh_lbl"></label><textarea id="dtxt" dir="ltr" spellcheck="false" placeholder="example.com&#10;sub.example.org"></textarea><label data-i="doh_prov"></label><select id="dprov"><option value="cf">Cloudflare</option><option value="google">Google</option><option value="custom">Custom</option></select><input id="durl" type="url" dir="ltr" placeholder="https://dns.example/dns-query" hidden><div class="r" style="margin-top:8px"><label class="ck"><input id="d4" type="checkbox" checked><span>IPv4 (A)</span></label><label class="ck"><input id="d6" type="checkbox" checked><span>IPv6 (AAAA)</span></label></div><div class="r" style="margin-top:8px"><button id="dgo" class="p" data-i="doh_go"></button></div></div>
       <div id="rrow" class="r" style="margin-top:8px"><button id="reload" data-i="reload"></button><span id="lmsg" class="m" style="margin:0"></span></div>
       <div id="crow"><label><span data-i="country"></span></label><select id="country"></select></div>
       <label data-i="count"></label>
@@ -648,7 +648,7 @@ function schedule(){if(_rt)return;_rt=setTimeout(()=>{_rt=0;render()},600)}
 
 async function resolveGeo(){
   const arr=S.res;
-  const top=arr.slice().sort((a,b)=>score(a)-score(b)).slice(0,100).filter(r=>/^\d+\.\d+\.\d+\.\d+$/.test(r.host)||isV6(r.host));
+  const top=arr.slice().sort((a,b)=>score(a)-score(b)).slice(0,100).filter(r=>/^\d+\.\d+\.\d+\.\d+$/.test(r.host)||(isV6(r.host)&&!/[\/]/.test(r.host)));
   if(!top.length)return;
   S.geoBusy=true;render();
   let map={};
@@ -818,6 +818,10 @@ function dohUrl(d,type){
   if(u.includes('{d}'))return u.replace('{d}',encodeURIComponent(d)).replace('{t}',type);
   return u+(u.includes('?')?'&':'?')+'name='+encodeURIComponent(d)+'&type='+type+'&ct=application/dns-json';
 }
+function dohAlt(d,ty){
+  const q=encodeURIComponent(d),first=dohUrl(d,ty),alt=['https://cloudflare-dns.com/dns-query?name='+q+'&type='+ty+'&ct=application/dns-json','https://dns.google/resolve?name='+q+'&type='+ty,'https://dns.quad9.net:5053/dns-query?name='+q+'&type='+ty,'https://free.shecan.ir/dns-query?name='+q+'&type='+ty+'&ct=application/dns-json'];
+  return [first,...alt].filter((u,i,a)=>u&&a.indexOf(u)===i);
+}
 function openDoh(){
   ++S.loadTok;S.src='doh';store.set('src','doh');hlTab('doh');showBox('d');
   S.kind='ip';
@@ -836,13 +840,56 @@ async function runDoh(){
   let k=0,ok=0;
   await Promise.all(Array.from({length:Math.min(6,jobs.length)},async()=>{
     while(k<jobs.length){const [d,ty]=jobs[k++];
-      try{const j=JSON.parse(await getText(dohUrl(d,ty)));ok++;for(const a of j.Answer||[])if(a.type===(ty==='A'?1:28)&&typeof a.data==='string')found.push(a.data)}catch(e){}}
+      try{let tx=null;for(const u of dohAlt(d,ty)){try{tx=await getText(u);if(tx)break}catch(e){}}const j=JSON.parse(tx);ok++;for(const a of j.Answer||[])if(a.type===(ty==='A'?1:28)&&typeof a.data==='string')found.push(a.data)}catch(e){}}
   }));
   const items=parseList(found.join('\n'),'ip');
   S.src='doh';S.kind='ip';
   if(!items.length){setItems([],'st_doh');S.src='doh';$('lmsg').textContent=t(ok?'empty_list':'doh_fail');return}
   setItems(items,'st_doh');
 }
+
+/* ---------------------------------------------- DoH server finder & tester */
+const DOH_BUILTIN=['https://free.shecan.ir/dns-query','https://dns.403.online/dns-query','https://cloudflare-dns.com/dns-query','https://dns.google/dns-query','https://dns.quad9.net/dns-query','https://dns.adguard-dns.com/dns-query','https://doh.opendns.com/dns-query','https://dns.nextdns.io/dns-query','https://doh.dns.sb/dns-query','https://freedns.controld.com/p2','https://unfiltered.adguard-dns.com/dns-query','https://security.cloudflare-dns.com/dns-query','https://family.cloudflare-dns.com/dns-query','https://dns11.quad9.net/dns-query','https://doh.mullvad.net/dns-query','https://dns.mullvad.net/dns-query','https://doh.libredns.gr/dns-query','https://doh.cleanbrowsing.org/doh/security-filter/','https://doh.cleanbrowsing.org/doh/family-filter/','https://dnsforge.de/dns-query','https://doh.applied-privacy.net/query','https://odvr.nic.cz/doh','https://dns.digitale-gesellschaft.ch/dns-query','https://doh.ffmuc.net/dns-query','https://dns.alidns.com/dns-query','https://doh.pub/dns-query','https://dns64.dns.google/dns-query','https://1dot1dot1dot1.cloudflare-dns.com/dns-query','https://doh.familyshield.opendns.com/dns-query','https://dns.twnic.tw/dns-query'];
+function dnsWire(name){
+  const b=[0x12,0x34,1,0,0,1,0,0,0,0,0,0];
+  for(const l of name.split('.')){b.push(l.length);for(const c of l)b.push(c.charCodeAt(0))}
+  b.push(0,0,1,0,1);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function dohProbe(url){
+  const q=url+(url.includes('?')?'&':'?')+'dns='+dnsWire('example.com'),ts=[];
+  for(let i=0;i<2;i++){
+    const t0=performance.now();
+    try{
+      if(NATIVE){const r=await nat('fetch',{url:q,timeout:6000});if(!r.ok||!r.text||r.text.length<20)throw 0}
+      else{const c=new AbortController(),id=setTimeout(()=>c.abort(),6000);try{const r=await fetch(q,{signal:c.signal,cache:'no-store',headers:{accept:'application/dns-message'}});if(!r.ok)throw 0;const b=await r.arrayBuffer();if(b.byteLength<20)throw 0}finally{clearTimeout(id)}}
+      ts.push(performance.now()-t0);
+    }catch(e){}
+  }
+  return ts.length?{min:Math.min(...ts),avg:ts.reduce((a,b)=>a+b,0)/ts.length,loss:Math.round((2-ts.length)*50)}:null;
+}
+async function runDohTest(){
+  store.set('dsrv',$('dsrv').value);store.set('dn',$('dn').value);
+  const own=$('dsrv').value.split(/[\s,;]+/).filter(u=>/^https:\/\//i.test(u));
+  const n=Math.max(1,Math.min(60,+$('dn').value||10));
+  const urls=[...new Set([...own,...DOH_BUILTIN.slice(0,n)])];
+  ++S.loadTok;resetResults();S.src='doh';S.kind='ip';S.items=[];S.statusKey='st_doh';
+  S.total=urls.length;S.scanning=true;render();
+  let k=0;const my=S.loadTok;
+  await Promise.all(Array.from({length:Math.min(6,urls.length)},async()=>{
+    while(k<urls.length&&my===S.loadTok){
+      const u=urls[k++],r=await dohProbe(u);if(my!==S.loadTok)return;
+      S.done++;
+      if(r)S.res.push({addr:u,host:u,port:0,user:'',pass:'',cc:'',ping:r.min,delay:r.avg,loss:r.loss,colo:'DoH'});else S.failed++;
+      render();
+    }
+  }));
+  if(my===S.loadTok){S.scanning=false;render();toast(t('t_done',{n:S.res.length,m:S.failed}))}
+}
+$('dtest').onclick=runDohTest;
+try{$('dsrv').value=store.get('dsrv','');$('dn').value=store.get('dn','10')}catch(e){}
+I18N.en.dsrv_lbl='Your own DoH servers (optional, one https:// link per line)';I18N.en.dsrv_n='How many built-in servers';I18N.en.dsrv_go='Add & test DoH servers';I18N.en.dsrv_hint='Adds that many known public DoH servers (Iran-friendly ones first), plus yours, and measures the real response time of each. Copy the working ones.';
+I18N.fa.dsrv_lbl='سرورهای DoH خودتان (اختیاری، هر خط یک لینک https://)';I18N.fa.dsrv_n='چند سرور آماده';I18N.fa.dsrv_go='افزودن و تست سرورهای DoH';I18N.fa.dsrv_hint='به تعداد دلخواه سرور DoH عمومی (اول سرورهای مناسب ایران) به‌علاوه‌ی سرورهای شما اضافه می‌شود و زمان پاسخ واقعی هرکدام اندازه‌گیری می‌شود. سالم‌ها را کپی کنید.';
 $('ago').onclick=runApi;$('dgo').onclick=runDoh;
 $('dprov').onchange=()=>{$('durl').hidden=$('dprov').value!=='custom'};
 
